@@ -85,9 +85,6 @@ func (c *Client) writePump() {
 		ticker.Stop()
 		c.conn.Close()
 		log.Printf("Client %s writePump closed", c.id)
-		// Hinweis: Das Unregister sollte idealerweise vom readPump ausgelöst werden,
-		// da Lese-Fehler zuerst auftreten. Ein Fehler hier bedeutet meist,
-		// dass die Verbindung bereits weg ist.
 	}()
 	for {
 		select {
@@ -99,30 +96,15 @@ func (c *Client) writePump() {
 				log.Printf("Client %s send channel closed by hub", c.id)
 				return
 			}
-
-			w, err := c.conn.NextWriter(websocket.TextMessage)
-			if err != nil {
-				log.Printf("error getting writer for client %s: %v", c.id, err)
-				return
-			}
-			w.Write(message)
-
-			// Füge alle weiteren Nachrichten in der Warteschlange hinzu.
-			n := len(c.send)
-			for i := 0; i < n; i++ {
-				w.Write([]byte{'\n'}) // Trenne Nachrichten mit Newline, falls gewünscht
-				w.Write(<-c.send)
-			}
-
-			if err := w.Close(); err != nil {
-				log.Printf("error closing writer for client %s: %v", c.id, err)
+			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
+				log.Printf("error writing message to client %s: %v", c.id, err)
 				return
 			}
 		case <-ticker.C:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				log.Printf("error sending ping to client %s: %v", c.id, err)
-				return // Bei Ping-Fehler annehmen, dass die Verbindung tot ist
+				return
 			}
 		}
 	}
