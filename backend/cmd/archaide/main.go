@@ -18,7 +18,6 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true }, // TODO change to a more secure function...
 }
 
-// serveWs behandelt WebSocket-Anfragen vom Peer.
 func serveWs(hub *coms.Hub, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -27,7 +26,7 @@ func serveWs(hub *coms.Hub, w http.ResponseWriter, r *http.Request) {
 	}
 	log.Println("Client connected from:", conn.RemoteAddr())
 
-	// Erstelle einen neuen Client für diese Verbindung
+	// Create a new client for a new connection
 	client := &coms.Client{
 		Hub:          hub,
 		Conn:         conn,
@@ -38,24 +37,19 @@ func serveWs(hub *coms.Hub, w http.ResponseWriter, r *http.Request) {
 	}
 	client.Hub.Register <- client
 
-	// Starte die Pump-Goroutinen für diesen Client
-	// Diese Goroutinen laufen, bis die Verbindung geschlossen wird oder ein Fehler auftritt.
 	go client.WritePump()
 	go client.ReadPump()
-
-	// readPump kümmert sich darum, den Client beim Hub abzumelden, wenn die Verbindung endet.
 }
 
 func main() {
 	flag.Parse()
-	hub := coms.NewHub() // Erstelle den zentralen Hub
-	go hub.Run()         // Starte den Hub in einer eigenen Goroutine
+	hub := coms.NewHub()
+	go hub.Run()
 
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-		serveWs(hub, w, r) // Behandle WebSocket-Verbindungen
+		serveWs(hub, w, r)
 	})
 
-	// Optional: Füge einen einfachen HTTP-Handler hinzu, um eine Test-HTML-Seite auszuliefern
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
