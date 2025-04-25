@@ -1,10 +1,11 @@
-package main
+package coms
 
 import (
 	"encoding/json"
 	"log"
 	"time"
 
+	"github.com/Driemtax/Archaide/internal/message"
 	"github.com/gorilla/websocket"
 )
 
@@ -21,45 +22,45 @@ const (
 
 // Client ist eine Zwischeninstanz zwischen der WebSocket-Verbindung und dem Hub.
 type Client struct {
-	hub *Hub
+	Hub *Hub
 	// Die WebSocket-Verbindung.
-	conn *websocket.Conn
+	Conn *websocket.Conn
 	// Gepufferter Kanal für ausgehende Nachrichten.
-	send chan []byte
+	Send chan []byte
 	// Eindeutige ID für den Client
-	id string
+	Id string
 	// Der aktuelle Score des Spielers
-	score int
+	Score int
 	// Das vom Spieler ausgewählte Spiel in der aktuellen Runde
-	selectedGame string
+	SelectedGame string
 }
 
 // readPump pumpt Nachrichten von der WebSocket-Verbindung zum Hub.
 // Die Anwendung startet readPump in einer eigenen Goroutine für jede Verbindung.
 // Sie stellt sicher, dass höchstens eine Leseoperation pro Verbindung läuft.
-func (c *Client) readPump() {
+func (c *Client) ReadPump() {
 	defer func() {
-		c.hub.unregister <- c
-		c.conn.Close()
-		log.Printf("Client %s disconnected (readPump closed)", c.id)
+		c.Hub.Unregister <- c
+		c.Conn.Close()
+		log.Printf("Client %s disconnected (readPump closed)", c.Id)
 	}()
-	c.conn.SetReadLimit(maxMessageSize)
-	c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.conn.SetPongHandler(func(string) error { c.conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
+	c.Conn.SetReadLimit(maxMessageSize)
+	c.Conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.Conn.SetPongHandler(func(string) error { c.Conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 
 	for {
-		_, messageBytes, err := c.conn.ReadMessage()
+		_, messageBytes, err := c.Conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("error reading message for client %s: %v", c.id, err)
+				log.Printf("error reading message for client %s: %v", c.Id, err)
 			}
 			break // Beendet die Schleife bei Fehlern (z.B. Verbindungsabbruch)
 		}
 
 		// Verarbeite die empfangene Nachricht
-		var msg Message
+		var msg message.Message
 		if err := json.Unmarshal(messageBytes, &msg); err != nil {
-			log.Printf("error unmarshalling message from client %s: %v", c.id, err)
+			log.Printf("error unmarshalling message from client %s: %v", c.Id, err)
 			// Sende ggf. eine Fehlermeldung zurück an den Client
 			continue
 		}
@@ -71,7 +72,7 @@ func (c *Client) readPump() {
 			client:  c,
 			message: msg,
 		}
-		c.hub.incoming <- hubMsg // Sende an den Hub zur Verarbeitung
+		c.Hub.Incoming <- hubMsg // Sende an den Hub zur Verarbeitung
 	}
 }
 
@@ -79,31 +80,31 @@ func (c *Client) readPump() {
 // Eine Goroutine, die writePump ausführt, wird für jede Verbindung gestartet. Die
 // Anwendung stellt sicher, dass höchstens eine Schreiboperation pro Verbindung läuft,
 // indem alle Nachrichten über den `send`-Kanal dieses Clients gesendet werden.
-func (c *Client) writePump() {
+func (c *Client) WritePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
-		c.conn.Close()
-		log.Printf("Client %s writePump closed", c.id)
+		c.Conn.Close()
+		log.Printf("Client %s writePump closed", c.Id)
 	}()
 	for {
 		select {
-		case message, ok := <-c.send:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+		case message, ok := <-c.Send:
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// Der Hub hat den Kanal geschlossen.
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-				log.Printf("Client %s send channel closed by hub", c.id)
+				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+				log.Printf("Client %s send channel closed by hub", c.Id)
 				return
 			}
-			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
-				log.Printf("error writing message to client %s: %v", c.id, err)
+			if err := c.Conn.WriteMessage(websocket.TextMessage, message); err != nil {
+				log.Printf("error writing message to client %s: %v", c.Id, err)
 				return
 			}
 		case <-ticker.C:
-			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				log.Printf("error sending ping to client %s: %v", c.id, err)
+			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				log.Printf("error sending ping to client %s: %v", c.Id, err)
 				return
 			}
 		}
@@ -114,24 +115,24 @@ func (c *Client) writePump() {
 func (c *Client) sendMessage(msgType string, payload interface{}) error {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		log.Printf("Error marshalling payload for client %s: %v", c.id, err)
+		log.Printf("Error marshalling payload for client %s: %v", c.Id, err)
 		return err
 	}
-	message := Message{
+	message := message.Message{
 		Type:    msgType,
 		Payload: json.RawMessage(payloadBytes),
 	}
 	messageBytes, err := json.Marshal(message)
 	if err != nil {
-		log.Printf("Error marshalling message for client %s: %v", c.id, err)
+		log.Printf("Error marshalling message for client %s: %v", c.Id, err)
 		return err
 	}
 
 	// Sende die Nachricht nicht-blockierend, um Deadlocks zu vermeiden, falls der send-Puffer voll ist
 	select {
-	case c.send <- messageBytes:
+	case c.Send <- messageBytes:
 	default:
-		log.Printf("Client %s send buffer full. Dropping message.", c.id)
+		log.Printf("Client %s send buffer full. Dropping message.", c.Id)
 		// Optional: Schließe die Verbindung, wenn der Puffer dauerhaft voll ist
 		// close(c.send) // Vorsicht: Dies würde den writePump beenden
 	}
