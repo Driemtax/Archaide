@@ -55,7 +55,7 @@ func main() {
 			http.NotFound(w, r)
 			return
 		}
-		http.ServeFile(w, r, "web/lobby.html")
+		http.ServeFile(w, r, "web/error.html")
 	})
 
 	log.Printf("Server starting on %s", *addr)
