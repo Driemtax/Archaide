@@ -11,4 +11,5 @@ type Game interface {
 	HandleInput(client *coms.Client, input message.Message) // Handles input from a client
 	isOver() bool                                           // Checks if the game is over
 	sendGameState()                                         // Sends the current game state to all clients
+	sendGameOver()                                          // Sends the game over state to all clients
 }
