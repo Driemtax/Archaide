@@ -9,34 +9,34 @@ import (
 )
 
 const (
-	// Zeit, die für das Schreiben einer Nachricht an den Peer erlaubt ist.
+	// Time allowed to write a message to the peer.
 	writeWait = 10 * time.Second
-	// Zeit, die für das Lesen der nächsten Pong-Nachricht vom Peer erlaubt ist.
+	// Time allowed to read the next pong message from the peer.
 	pongWait = 60 * time.Second
-	// Sende Pings an den Peer mit diesem Intervall. Muss kleiner als pongWait sein.
+	// Send pings to peer with this period. Must be less than pongWait.
 	pingPeriod = (pongWait * 9) / 10
-	// Maximale Nachrichtengröße, die vom Peer erlaubt ist.
+	// Maximum message size allowed from peer.
 	maxMessageSize = 512
 )
 
-// Client ist eine Zwischeninstanz zwischen der WebSocket-Verbindung und dem Hub.
+// Client is an intermediate instance between the WebSocket connection and the Hub.
 type Client struct {
 	hub *Hub
-	// Die WebSocket-Verbindung.
+	// The WebSocket connection.
 	conn *websocket.Conn
-	// Gepufferter Kanal für ausgehende Nachrichten.
+	// Buffered channel of outbound messages.
 	send chan []byte
-	// Eindeutige ID für den Client
+	// Unique ID for the client.
 	id string
-	// Der aktuelle Score des Spielers
+	// The player's current score.
 	score int
-	// Das vom Spieler ausgewählte Spiel in der aktuellen Runde
+	// The game selected by the player in the current round.
 	selectedGame string
 }
 
-// readPump pumpt Nachrichten von der WebSocket-Verbindung zum Hub.
-// Die Anwendung startet readPump in einer eigenen Goroutine für jede Verbindung.
-// Sie stellt sicher, dass höchstens eine Leseoperation pro Verbindung läuft.
+// readPump pumps messages from the WebSocket connection to the Hub.
+// The application runs readPump in its own goroutine for each connection.
+// It ensures that at most one read operation is performed per connection.
 func (c *Client) readPump() {
 	defer func() {
 		c.hub.unregister <- c
@@ -53,32 +53,32 @@ func (c *Client) readPump() {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("error reading message for client %s: %v", c.id, err)
 			}
-			break // Beendet die Schleife bei Fehlern (z.B. Verbindungsabbruch)
+			break // Exits the loop on errors (e.g., connection closed)
 		}
 
-		// Verarbeite die empfangene Nachricht
+		// Process the received message
 		var msg Message
 		if err := json.Unmarshal(messageBytes, &msg); err != nil {
 			log.Printf("error unmarshalling message from client %s: %v", c.id, err)
-			// Sende ggf. eine Fehlermeldung zurück an den Client
+			// Optionally send an error message back to the client
 			continue
 		}
 
-		// Leite die Nachricht zur Verarbeitung an den Hub weiter
-		// Der Hub kann dann basierend auf msg.Type entscheiden, was zu tun ist.
-		// Wir fügen die Client-ID hinzu, damit der Hub weiß, von wem die Nachricht kam.
+		// Forward the message to the Hub for processing
+		// The Hub can then decide what to do based on msg.Type.
+		// We add the client ID so the Hub knows who sent the message.
 		hubMsg := HubMessage{
 			client:  c,
 			message: msg,
 		}
-		c.hub.incoming <- hubMsg // Sende an den Hub zur Verarbeitung
+		c.hub.incoming <- hubMsg // Send to the Hub for processing
 	}
 }
 
-// writePump pumpt Nachrichten vom Hub zur WebSocket-Verbindung.
-// Eine Goroutine, die writePump ausführt, wird für jede Verbindung gestartet. Die
-// Anwendung stellt sicher, dass höchstens eine Schreiboperation pro Verbindung läuft,
-// indem alle Nachrichten über den `send`-Kanal dieses Clients gesendet werden.
+// writePump pumps messages from the Hub to the WebSocket connection.
+// A goroutine running writePump is started for each connection. The
+// application ensures that at most one write operation is performed per connection
+// by sending all messages through the client's `send` channel.
 func (c *Client) writePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
@@ -91,7 +91,7 @@ func (c *Client) writePump() {
 		case message, ok := <-c.send:
 			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
-				// Der Hub hat den Kanal geschlossen.
+				// The Hub closed the channel.
 				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 				log.Printf("Client %s send channel closed by hub", c.id)
 				return
@@ -110,7 +110,7 @@ func (c *Client) writePump() {
 	}
 }
 
-// Helper zum Senden einer strukturierten Nachricht an diesen Client
+// Helper for sending a structured message to this client
 func (c *Client) sendMessage(msgType string, payload interface{}) error {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -127,13 +127,13 @@ func (c *Client) sendMessage(msgType string, payload interface{}) error {
 		return err
 	}
 
-	// Sende die Nachricht nicht-blockierend, um Deadlocks zu vermeiden, falls der send-Puffer voll ist
+	// Send the message non-blocking to avoid deadlocks if the send buffer is full
 	select {
 	case c.send <- messageBytes:
 	default:
 		log.Printf("Client %s send buffer full. Dropping message.", c.id)
-		// Optional: Schließe die Verbindung, wenn der Puffer dauerhaft voll ist
-		// close(c.send) // Vorsicht: Dies würde den writePump beenden
+		// Optionally: Close the connection if the buffer is permanently full
+		// close(c.send) // Caution: This would terminate writePump
 	}
 	return nil
 }
