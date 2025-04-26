@@ -96,7 +96,7 @@ func (c *Client) WritePump() {
 
 // sendMessage formats and sends a structured message to the client
 // Uses non-blocking send to prevent deadlocks if buffer is full
-func (c *Client) sendMessage(msgType message.MessageType, payload any) error {
+func (c *Client) SendMessage(msgType message.MessageType, payload any) error {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		log.Printf("Error marshalling payload for client %s: %v", c.Id, err)
