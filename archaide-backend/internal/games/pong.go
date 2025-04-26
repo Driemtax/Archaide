@@ -2,12 +2,16 @@ package games
 
 import (
 	"encoding/json"
+	"math/rand"
 	"time"
 
 	"github.com/Driemtax/Archaide/internal/coms"
 	"github.com/Driemtax/Archaide/internal/message"
 )
 
+// Every calculation in this file depends on y=0 beeing at the bottom. I read online, that a common
+// standard is to have y=0 at the top, in this case i would have to flip everything here or invert
+// all y values before sending them to the client.
 type PongGame struct {
 	Player1, Player2           *coms.Client
 	Player1Input               chan []byte
@@ -71,26 +75,26 @@ func (pg *PongGame) Run() {
 func (pg *PongGame) HandleInput(client *coms.Client, input []byte) {
 	var inp message.PongInputPayload
 	if err := json.Unmarshal(input, &inp); err != nil {
-		// TODO: Handle error? Do i need to?
 		return
 	}
 
 	speed := 8.0
 	if client == pg.Player1 {
-		if inp.Direction == "up" && pg.Paddle1Y < pg.Height-50 {
+		if inp.Direction == "up" && pg.Paddle1Y < pg.Height-PaddleHeight {
 			pg.Paddle1Y += speed
-		} else if inp.Direction == "down" && pg.Paddle1Y > 50 {
+		} else if inp.Direction == "down" && pg.Paddle1Y > PaddleHeight {
 			pg.Paddle1Y -= speed
 		}
 	} else if client == pg.Player2 {
-		if inp.Direction == "up" && pg.Paddle2Y < pg.Height-50 {
-			pg.Paddle1Y += speed
-		} else if inp.Direction == "down" && pg.Paddle2Y > 50 {
-			pg.Paddle1Y -= speed
+		if inp.Direction == "up" && pg.Paddle2Y < pg.Height-PaddleHeight {
+			pg.Paddle2Y += speed
+		} else if inp.Direction == "down" && pg.Paddle2Y > PaddleHeight {
+			pg.Paddle2Y -= speed
 		}
 	}
 }
 
+// Tick updates the game state, moving the ball, checking for collisions and scoring
 func (pg *PongGame) Tick() {
 	// move the ball
 	pg.BallX += pg.BallVX
@@ -102,6 +106,21 @@ func (pg *PongGame) Tick() {
 	}
 
 	// TODO : Check if the ball hits the paddles
+	// Check for collision with left paddle (Player 1)
+	if pg.BallX <= PaddleWidth && // Ball reached the left side
+		pg.BallY+BallSize >= pg.Paddle1Y && // Ball is within the paddle's height
+		pg.BallY <= pg.Paddle1Y+PaddleHeight {
+		pg.BallVX = -pg.BallVX // Reverse ball's X velocity
+		return
+	}
+
+	// Check for collision with right paddle (Player 2)
+	if pg.BallX+BallSize >= pg.Width-PaddleWidth && // Ball reached the right side
+		pg.BallY+BallSize >= pg.Paddle2Y && // Ball is within the paddle's height
+		pg.BallY <= pg.Paddle2Y+PaddleHeight {
+		pg.BallVX = -pg.BallVX // Reverse ball's X velocity
+		return
+	}
 
 	// Check if the ball hits the left or right wall, then someone scored
 	if pg.BallX < 0 {
@@ -120,8 +139,7 @@ func (pg *PongGame) Tick() {
 
 // IsOver checks if the game is over (e.g., if a player has reached a certain score)
 func (pg *PongGame) IsOver() bool {
-	// Prüfe, ob das Spiel vorbei ist
-	return false // Beispiel
+	return pg.Score1 >= 5 || pg.Score2 >= 5
 }
 
 // sendGameState sends the current game state to both players
@@ -162,9 +180,15 @@ func (pg *PongGame) determineWinner() string {
 
 // Reset resets the game state to the initial values
 func (pg *PongGame) Reset() {
-	// Resets the game
 	pg.BallX, pg.BallY = pg.Width/2, pg.Height/2
-	pg.BallVX, pg.BallVY = 4, 3
-	pg.Paddle1Y, pg.Paddle2Y = 250, 250
-	pg.Running = true
+	vx := 4.0
+	if rand.Intn(2) == 0 {
+		vx = -vx
+	}
+	vy := 3.0
+	if rand.Intn(2) == 0 {
+		vy = -vy
+	}
+	pg.BallVX, pg.BallVY = vx, vy
+	pg.Paddle1Y, pg.Paddle2Y = pg.Height/2-PaddleHeight/2, pg.Height/2-PaddleHeight/2
 }
