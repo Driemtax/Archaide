@@ -16,12 +16,22 @@ export interface ErrorPayload {
   message: string;
 }
 
+export interface PongStatePayload {
+  BallX: number;
+  BallY: number;
+  Paddle1Y: number;
+  Paddle2Y: number;
+  Score1: number;
+  Score2: number;
+}
+
 export type ServerMessage =
   | { type: "welcome"; payload: WelcomePayload }
   | { type: "update_lobby"; payload: UpdateLobbyPayload }
   | { type: "game_selected"; payload: GameSelectedPayload }
   | { type: "error"; payload: ErrorPayload }
-  | { type: string; payload: unknown }; // Fallback for unhandled/generic types
+  | { type: string; payload: unknown } // Fallback for unhandled/generic types
+  | { type: "pong_state"; payload: PongStatePayload};
 
 export interface ClientSelectGamePayload {
   game: string;
@@ -38,3 +48,5 @@ export interface ClientSelectGameMessage extends ClientMessageBase {
 }
 
 export type ClientMessage = ClientSelectGameMessage;
+
+
