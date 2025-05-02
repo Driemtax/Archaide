@@ -6,6 +6,8 @@ import (
 	"math/rand"
 	"time"
 
+	"slices"
+
 	"github.com/Driemtax/Archaide/internal/message"
 )
 
@@ -81,13 +83,7 @@ func (h *Hub) handleIncomingMessage(client *Client, msg message.Message) {
 			return
 		}
 
-		isValidGame := false
-		for _, game := range h.AvailableGames {
-			if game == payload.Game {
-				isValidGame = true
-				break
-			}
-		}
+		isValidGame := slices.Contains(h.AvailableGames, payload.Game)
 		if !isValidGame {
 			log.Printf("Client %s selected invalid game: %s", client.Id, payload.Game)
 			client.SendMessage("error", message.ErrorMessage{Message: "Invalid game selected"})

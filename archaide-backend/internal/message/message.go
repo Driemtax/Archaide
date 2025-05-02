@@ -1,6 +1,8 @@
 package message
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
 
 // Message represents a generic message that is sent over WebSocket.
 // The 'Type' helps the server or client understand how to interpret the 'Payload'.
@@ -13,14 +15,17 @@ type MessageType string
 
 const (
 	// Message types for the WebSocket communication
-	Welcome      MessageType = "welcome"        // Sent when a client connects
-	UpdateLobby  MessageType = "update_lobby"   // Sent to update the lobby state
-	SelectGame   MessageType = "select_game"    // Sent when a client selects a game
-	GameSelected MessageType = "game_selected"  // Sent when a game is selected
-	Error        MessageType = "error"          // Sent when an error occurs
-	PongInput    MessageType = "pong_input"     // From client: Move paddle
-	PongState    MessageType = "pong_state"     // From server: current game state
-	PongGameOver MessageType = "pong_game_over" // From server: game over
+	Welcome           MessageType = "welcome"             // Sent when a client connects
+	UpdateLobby       MessageType = "update_lobby"        // Sent to update the lobby state
+	SelectGame        MessageType = "select_game"         // Sent when a client selects a game
+	GameSelected      MessageType = "game_selected"       // Sent when a game is selected
+	Error             MessageType = "error"               // Sent when an error occurs
+	PongInput         MessageType = "pong_input"          // From client: Move paddle
+	PongState         MessageType = "pong_state"          // From server: current game state
+	PongGameOver      MessageType = "pong_game_over"      // From server: game over
+	AsteroidsInput    MessageType = "asteroids_input"     // From client: Move player
+	AsteroidsState    MessageType = "asteroids_state"     // From server: current game state
+	AsteroidsGameOver MessageType = "asteroids_game_over" // From server: game over
 )
 
 // Payload Structures (Examples)
@@ -50,6 +55,8 @@ type GameSelectedMessage struct {
 type ErrorMessage struct {
 	Message string `json:"message"`
 }
+
+/// --- PONG ---
 
 type PongInputPayload struct {
 	Direction string `json:"direction"` // "up", "down", "none"
