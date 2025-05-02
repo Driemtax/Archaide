@@ -49,7 +49,7 @@ func (h *Hub) Run() {
 				ClientID:     client.Id,
 				CurrentGames: h.AvailableGames,
 			}
-			client.sendMessage("welcome", welcomePayload)
+			client.SendMessage(message.Welcome, welcomePayload)
 
 			h.broadcastLobbyUpdate()
 
@@ -73,11 +73,11 @@ func (h *Hub) Run() {
 func (h *Hub) handleIncomingMessage(client *Client, msg message.Message) {
 	log.Printf("Received message type '%s' from client %s", msg.Type, client.Id)
 	switch msg.Type {
-	case "select_game":
+	case message.SelectGame:
 		var payload message.SelectGamePayload
 		if err := json.Unmarshal(msg.Payload, &payload); err != nil {
 			log.Printf("Error unmarshalling select_game payload from %s: %v", client.Id, err)
-			client.sendMessage("error", message.ErrorMessage{Message: "Invalid select_game payload"})
+			client.SendMessage("error", message.ErrorMessage{Message: "Invalid select_game payload"})
 			return
 		}
 
@@ -90,7 +90,7 @@ func (h *Hub) handleIncomingMessage(client *Client, msg message.Message) {
 		}
 		if !isValidGame {
 			log.Printf("Client %s selected invalid game: %s", client.Id, payload.Game)
-			client.sendMessage("error", message.ErrorMessage{Message: "Invalid game selected"})
+			client.SendMessage("error", message.ErrorMessage{Message: "Invalid game selected"})
 			return
 		}
 
@@ -152,10 +152,10 @@ func (h *Hub) selectAndAnnounceGame() {
 	log.Printf("Randomly selected game: %s", selectedGame)
 
 	announcementPayload := message.GameSelectedMessage{SelectedGame: selectedGame}
-	h.broadcastMessage("game_selected", announcementPayload)
+	h.broadcastMessage(message.GameSelected, announcementPayload)
 }
 
-// broadcastLobbyUpdate sends the current player list with scores to all connected clients
+// broadcastLobbyUpdate Sends the current player list with scores to all connected clients
 func (h *Hub) broadcastLobbyUpdate() {
 	playerScores := make(map[string]int)
 	for client := range h.Clients {
@@ -163,11 +163,11 @@ func (h *Hub) broadcastLobbyUpdate() {
 	}
 	payload := message.LobbyUpdateMessage{Players: playerScores}
 
-	h.broadcastMessage("update_lobby", payload)
+	h.broadcastMessage(message.UpdateLobby, payload)
 }
 
-// broadcastMessage marshals and sends a message to all connected clients
-func (h *Hub) broadcastMessage(msgType string, payload interface{}) {
+// broadcastMessage marshals and Sends a message to all connected clients
+func (h *Hub) broadcastMessage(msgType message.MessageType, payload interface{}) {
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
 		log.Printf("Error marshalling payload for broadcast: %v", err)

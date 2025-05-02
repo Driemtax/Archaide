@@ -5,9 +5,23 @@ import "encoding/json"
 // Message represents a generic message that is sent over WebSocket.
 // The 'Type' helps the server or client understand how to interpret the 'Payload'.
 type Message struct {
-	Type    string          `json:"type"`    // e.g. "update_lobby", "select_game", "error", "welcome"
+	Type    MessageType     `json:"type"`    // e.g. "update_lobby", "select_game", "error", "welcome"
 	Payload json.RawMessage `json:"payload"` // The actual data, depending on the type
 }
+
+type MessageType string
+
+const (
+	// Message types for the WebSocket communication
+	Welcome      MessageType = "welcome"        // Sent when a client connects
+	UpdateLobby  MessageType = "update_lobby"   // Sent to update the lobby state
+	SelectGame   MessageType = "select_game"    // Sent when a client selects a game
+	GameSelected MessageType = "game_selected"  // Sent when a game is selected
+	Error        MessageType = "error"          // Sent when an error occurs
+	PongInput    MessageType = "pong_input"     // From client: Move paddle
+	PongState    MessageType = "pong_state"     // From server: current game state
+	PongGameOver MessageType = "pong_game_over" // From server: game over
+)
 
 // Payload Structures (Examples)
 
@@ -35,4 +49,20 @@ type GameSelectedMessage struct {
 // ErrorMessage is sent in case of errors
 type ErrorMessage struct {
 	Message string `json:"message"`
+}
+
+type PongInputPayload struct {
+	Direction string `json:"direction"` // "up", "down", "none"
+}
+type PongStatePayload struct {
+	BallX    float64 `json:"ballX"`
+	BallY    float64 `json:"ballY"`
+	Paddle1Y float64 `json:"paddle1Y"`
+	Paddle2Y float64 `json:"paddle2Y"`
+	Score1   int     `json:"score1"`
+	Score2   int     `json:"score2"`
+}
+
+type PongGameOverPayload struct {
+	Winner string `json:"winner"` // ClientID of the winner
 }
