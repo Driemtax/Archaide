@@ -8,7 +8,7 @@ import (
 type Game interface {
 	Run()                                          // Starts the game
 	HandleInput(client *coms.Client, input []byte) // Handles input from a client
-	isOver() bool                                  // Checks if the game is over
-	sendGameState()                                // Sends the current game state to all clients
-	sendGameOver()                                 // Sends the game over state to all clients
+	AddPlayer(client *coms.Client)                 // Adds a new player to the game
+	RemoverPlayer(client *coms.Client)             // Removes a player from a game
+	Stop()                                         // Stops the game
 }
