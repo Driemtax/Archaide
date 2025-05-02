@@ -31,27 +31,27 @@ function PongStage({ gameState, onMove }: PongGameProps) {
       <pixiGraphics
         draw={(g: Graphics) => {
           g.clear();
-          g.fill(0x000000);
+          g.fill(0xffffff);
           g.rect(0, 0, PaddleWidth, PaddleHeight);
           g.fill()
         }}
-        x={50}
-        y={gameState.Paddle1Y}
+        x={0}
+        y={gameState.Paddle1Y - (PaddleHeight / 2)}
       />
       {/* Paddle 2 */}
       <pixiGraphics
         draw={(g: Graphics) => {
-          g.fill(0x000000);
+          g.fill(0xffffff);
           g.rect(0, 0, PaddleWidth, PaddleHeight);
           g.fill();
         }}
-        x={800 - 50 - PaddleWidth}
-        y={gameState.Paddle2Y}
+        x={800 - PaddleWidth}
+        y={gameState.Paddle2Y - (PaddleHeight / 2)}
       />
       {/* Ball */}
       <pixiGraphics
         draw={(g: Graphics) => {
-          g.fill(0xff0000);
+          g.fill(0xffffff);
           g.circle(0, 0, BallRadius);
           g.fill();
         }}
@@ -64,8 +64,10 @@ function PongStage({ gameState, onMove }: PongGameProps) {
 
 export default function PongGame(props: PongGameProps) {
   return (
-    <Application width={800} height={600} backgroundColor={0xffffff} antialias>
+    <div style={{border: "1px solid white"}}>
+    <Application width={800} height={600} backgroundColor={0x000000} antialias>
       <PongStage {...props} />
     </Application>
+    </div>
   );
 }
