@@ -19,7 +19,7 @@ const (
 	GameWidth    = 800.0
 	GameHeight   = 600.0
 	PaddleWidth  = 10.0
-	PaddleHeight = 60.0 // Increased paddle height slightly
+	PaddleHeight = 60.0
 	BallSize     = 10.0
 
 	// Game rules and physics.
@@ -105,7 +105,7 @@ func (g *PongGame) AddPlayer(player game.Player) error {
 	// Create the internal player state
 	newPlayerState := &PongPlayerState{
 		PlayerID: playerID,
-		PaddleY:  GameHeight / 2, // Start paddle in the middle
+		PaddleY:  (GameHeight / 2) - (PaddleHeight / 2),
 		Score:    0,
 		Role:     role,
 	}
