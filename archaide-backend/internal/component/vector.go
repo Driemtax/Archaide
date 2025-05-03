@@ -7,7 +7,8 @@ import (
 
 // Vector2D represents a 2-dimensional vector with float64 components.
 type Vector2D struct {
-	X, Y float64
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
 }
 
 func (v Vector2D) String() string {
