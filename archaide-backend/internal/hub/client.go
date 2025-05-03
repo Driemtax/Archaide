@@ -1,10 +1,11 @@
-package coms
+package hub
 
 import (
 	"encoding/json"
 	"log"
 	"time"
 
+	"github.com/Driemtax/Archaide/internal/game"
 	"github.com/Driemtax/Archaide/internal/message"
 	"github.com/gorilla/websocket"
 )
@@ -23,14 +24,53 @@ type Client struct {
 	Id           string
 	Score        int
 	SelectedGame string
+	gameID       string // The id of the game the user is inside
 }
+
+/// --- Implementing the game.Player Interface
+
+func (c *Client) GetID() string {
+	return c.Id
+}
+
+// sendMessage formats and sends a structured message to the client
+// Uses non-blocking send to prevent deadlocks if buffer is full
+func (c *Client) SendMessage(msgType message.MessageType, payload any) error {
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		log.Printf("Error marshalling payload for client %s: %v", c.Id, err)
+		return err
+	}
+	message := message.Message{
+		Type:    msgType,
+		Payload: json.RawMessage(payloadBytes),
+	}
+	messageBytes, err := json.Marshal(message)
+	if err != nil {
+		log.Printf("Error marshalling message for client %s: %v", c.Id, err)
+		return err
+	}
+
+	select {
+	case c.Send <- messageBytes:
+	default:
+		log.Printf("Client %s send buffer full. Dropping message.", c.Id)
+	}
+	return nil
+}
+
+/// --- End of implementing the game.Player interface
+
+// Compile Time Check -> Checking that Client
+// implements the game.Player interface correctly
+var _ game.Player = (*Client)(nil)
 
 // ReadPump transfers messages from the WebSocket to the Hub.
 // Runs in a separate goroutine for each connection, ensuring only one
 // read operation occurs per connection at a time.
 func (c *Client) ReadPump() {
 	defer func() {
-		c.Hub.Unregister <- c
+		c.Hub.unregister <- c
 		c.Conn.Close()
 		log.Printf("Client %s disconnected (readPump closed)", c.Id)
 	}()
@@ -53,11 +93,11 @@ func (c *Client) ReadPump() {
 			continue
 		}
 
-		hubMsg := HubMessage{
+		hubMsg := hubMessage{
 			client:  c,
 			message: msg,
 		}
-		c.Hub.Incoming <- hubMsg
+		c.Hub.incoming <- hubMsg
 	}
 }
 
@@ -92,30 +132,4 @@ func (c *Client) WritePump() {
 			}
 		}
 	}
-}
-
-// sendMessage formats and sends a structured message to the client
-// Uses non-blocking send to prevent deadlocks if buffer is full
-func (c *Client) SendMessage(msgType message.MessageType, payload any) error {
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		log.Printf("Error marshalling payload for client %s: %v", c.Id, err)
-		return err
-	}
-	message := message.Message{
-		Type:    msgType,
-		Payload: json.RawMessage(payloadBytes),
-	}
-	messageBytes, err := json.Marshal(message)
-	if err != nil {
-		log.Printf("Error marshalling message for client %s: %v", c.Id, err)
-		return err
-	}
-
-	select {
-	case c.Send <- messageBytes:
-	default:
-		log.Printf("Client %s send buffer full. Dropping message.", c.Id)
-	}
-	return nil
 }
