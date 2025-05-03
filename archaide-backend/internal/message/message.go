@@ -16,6 +16,7 @@ type MessageType string
 const (
 	// Message types for the WebSocket communication
 	Welcome           MessageType = "welcome"             // Sent when a client connects
+	BackToLobby       MessageType = "back_to_lobby"       // Send when a player returns from a game back to the lobby
 	UpdateLobby       MessageType = "update_lobby"        // Sent to update the lobby state
 	SelectGame        MessageType = "select_game"         // Sent when a client selects a game
 	GameSelected      MessageType = "game_selected"       // Sent when a game is selected
@@ -36,9 +37,14 @@ type WelcomeMessage struct {
 	CurrentGames []string `json:"currentGames"`
 }
 
+type PlayerInfo struct {
+	Score  int  `json:"score"`
+	InGame bool `json:"inGame"`
+}
+
 // LobbyUpdateMessage contains the current state of the lobby (players and their scores)
 type LobbyUpdateMessage struct {
-	Players map[string]int `json:"players"` // Map of ClientID to Score
+	Players map[string]PlayerInfo `json:"players"` // Map of ClientID to Score
 }
 
 // SelectGamePayload is sent by the client when they select a game
@@ -49,6 +55,7 @@ type SelectGamePayload struct {
 // GameSelectedMessage is sent to all when a game is selected
 type GameSelectedMessage struct {
 	SelectedGame string `json:"selectedGame"`
+	GameID       string `json:"gameId"`
 }
 
 // ErrorMessage is sent in case of errors
