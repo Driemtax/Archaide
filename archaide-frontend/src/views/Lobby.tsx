@@ -273,10 +273,7 @@ function Lobby(): JSX.Element {
               ))
             ) : (
               <p>No games available to join right now.</p>
-            )}
-            {selectedGameInfo && (
-              <div className="selected-game-info">{selectedGameInfo}</div>
-            )}
+            )}onMove("up")
           </div>
         </div>
       </div>
