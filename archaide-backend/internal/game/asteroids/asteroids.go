@@ -83,7 +83,7 @@ func (g *AsteroidsGame) AddPlayer(player game.Player) error {
 	return nil
 }
 
-func (g *AsteroidsGame) RemovePlayer(player game.Player) error {
+func (g *AsteroidsGame) RemovePlayer(player game.Player) {
 	g.playerMux.Lock()
 	defer g.playerMux.Unlock()
 
@@ -101,8 +101,6 @@ func (g *AsteroidsGame) RemovePlayer(player game.Player) error {
 			go g.Stop()
 		}
 	}
-
-	return nil
 }
 
 func (g *AsteroidsGame) Start() {

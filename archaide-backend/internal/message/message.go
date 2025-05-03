@@ -62,21 +62,3 @@ type GameSelectedMessage struct {
 type ErrorMessage struct {
 	Message string `json:"message"`
 }
-
-/// --- PONG ---
-
-type PongInputPayload struct {
-	Direction string `json:"direction"` // "up", "down", "none"
-}
-type PongStatePayload struct {
-	BallX    float64 `json:"ballX"`
-	BallY    float64 `json:"ballY"`
-	Paddle1Y float64 `json:"paddle1Y"`
-	Paddle2Y float64 `json:"paddle2Y"`
-	Score1   int     `json:"score1"`
-	Score2   int     `json:"score2"`
-}
-
-type PongGameOverPayload struct {
-	Winner string `json:"winner"` // ClientID of the winner
-}

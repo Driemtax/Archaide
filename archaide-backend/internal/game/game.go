@@ -22,7 +22,7 @@ type GameFinisher interface {
 type Game interface {
 	Start()                                           // Starts the game
 	AddPlayer(player Player) error                    // Adds a new player to the game
-	RemovePlayer(player Player) error                 // Removes a playser from the game
+	RemovePlayer(player Player)                       // Removes a playser from the game
 	HandleMessage(player Player, msg message.Message) // Handles incoming user input
 	Stop()                                            // Stops the game
 	GetID() string                                    // Returns the game id

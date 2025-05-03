@@ -10,6 +10,7 @@ import (
 
 	"github.com/Driemtax/Archaide/internal/game"
 	"github.com/Driemtax/Archaide/internal/game/asteroids"
+	"github.com/Driemtax/Archaide/internal/game/pong"
 	"github.com/Driemtax/Archaide/internal/message"
 	"github.com/google/uuid"
 )
@@ -223,10 +224,10 @@ func (h *Hub) selectAndStartGame() {
 		newGame = asteroidsGame
 		log.Printf("Instantiated Asteroids game with ID %s", gameID)
 
-	// TODO also add Pong here!
-	// case "Pong":
-	//     // newGame = games.NewPongGame(h, gameID)
-	//     log.Printf("Instantiated Pong game with ID %s", gameID)
+	case "Pong":
+		pongGame := pong.NewPongGame(h, gameID)
+		newGame = pongGame
+		log.Printf("Instantiated Pong game with ID %s", gameID)
 
 	default:
 		log.Printf("Unknown game selected: %s", selectedGameName)
