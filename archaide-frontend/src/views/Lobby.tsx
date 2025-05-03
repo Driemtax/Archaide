@@ -8,8 +8,10 @@ import type {
   ErrorPayload,
   ClientSelectGameMessage,
   ClientSelectGamePayload,
+  PongStatePayload
 } from "../types";
 import "./Lobby.css";
+import PongGame from "../games/pong/Pong";
 
 // Simple basic lobby component
 // We should iterate over it to make it a lot more attractive
@@ -22,12 +24,23 @@ function Lobby(): JSX.Element {
   const [players, setPlayers] = useState<Record<string, number>>({});
   const [availableGames, setAvailableGames] = useState<string[]>([]);
   const [myClientId, setMyClientId] = useState<string>("");
+  const [selectedGame, setSelectedGame] = useState<string>("");
   const [selectedGameInfo, setSelectedGameInfo] = useState<string>("");
   const [isGameSelectionDisabled, setIsGameSelectionDisabled] =
     useState<boolean>(false);
 
   const ws = useRef<WebSocket | null>(null);
   const logDivRef = useRef<HTMLDivElement | null>(null);
+
+  // Game states
+  const [pongState, setPongState] = useState<PongStatePayload>({
+    BallX: 400,
+    BallY: 300,
+    Paddle1Y: 300,
+    Paddle2Y: 300,
+    Score1: 0,
+    Score2: 0
+  });
 
   // --- WebSocket Logic ---
 
@@ -63,6 +76,7 @@ function Lobby(): JSX.Element {
             setSelectedGameInfo(
               `Game selected: ${payload.selectedGame}! Waiting for game start...`,
             );
+            setSelectedGame(payload.selectedGame)
             setIsGameSelectionDisabled(true);
             break;
           }
@@ -71,6 +85,12 @@ function Lobby(): JSX.Element {
             const errorMsg = `Server Error: ${payload.message}`;
             logMessage(errorMsg);
             alert(errorMsg);
+            break;
+          }
+
+          case "pong_state": {
+            const payload = message.payload as PongStatePayload;
+            setPongState(payload);
             break;
           }
           default:
@@ -197,58 +217,70 @@ function Lobby(): JSX.Element {
   // --- Rendering  ---
 
   return (
-    <div className="lobby-container">
-      <h1>Archaide Lobby</h1>
-
-      <div className="log-container" ref={logDivRef}>
-        {logMessages.map((msg, index) => (
-          <p key={index}>{msg}</p>
-        ))}
-      </div>
-
-      <div className="status-container">Status: {connectionStatus}</div>
-
-      <div className="main-content">
-        <div className="players-container">
-          <h2>Players in Lobby</h2>
-          {Object.keys(players).length > 0 ? (
-            Object.entries(players).map(([clientId, score]) => (
-              <div key={clientId} className="player">
-                <strong>
-                  {clientId === myClientId ? `${clientId} (You)` : clientId}:
-                </strong>{" "}
-                {score} points
-              </div>
-            ))
-          ) : (
-            <p>No other players currently in the lobby.</p>
-          )}
-        </div>
-
-        <div className="games-container">
-          <h2>Select a Game</h2>
-          {availableGames.length > 0 ? (
-            availableGames.map((game) => (
-              <button
-                key={game}
-                onClick={() => handleSelectGame(game)}
-                disabled={isGameSelectionDisabled}
-              >
-                {game}
-              </button>
-            ))
-          ) : (
-            <p>No games available to join right now.</p>
-          )}
-          {selectedGameInfo && (
-            <div className="selected-game-info">{selectedGameInfo}</div>
-          )}
-        </div>
-      </div>
-
+    <div className="page-container">
       <div className="game-canvas-container">
-        {/* We may define the pixi.js game canvas here... still unsure though we could also do some fancy routing logic but im still figuring it out XD*/}
+      {selectedGame === 'Pong' && (
+        <PongGame 
+          gameState={pongState}
+          onMove={(direction) => {
+            ws.current?.send(JSON.stringify({
+              type: "pong_input",
+              payload: { direction }
+            }))
+          }}/>
+      )}
       </div>
+      {selectedGame === "" && (
+        <div className="lobby-container">
+        <h1>Archaide Lobby</h1>
+
+        <div className="log-container" ref={logDivRef}>
+          {logMessages.map((msg, index) => (
+            <p key={index}>{msg}</p>
+          ))}
+        </div>
+
+        <div className="status-container">Status: {connectionStatus}</div>
+
+        <div className="main-content">
+          <div className="players-container">
+            <h2>Players in Lobby</h2>
+            {Object.keys(players).length > 0 ? (
+              Object.entries(players).map(([clientId, score]) => (
+                <div key={clientId} className="player">
+                  <strong>
+                    {clientId === myClientId ? `${clientId} (You)` : clientId}:
+                  </strong>{" "}
+                  {score} points
+                </div>
+              ))
+            ) : (
+              <p>No other players currently in the lobby.</p>
+            )}
+          </div>
+
+          <div className="games-container">
+            <h2>Select a Game</h2>
+            {availableGames.length > 0 ? (
+              availableGames.map((game) => (
+                <button
+                  key={game}
+                  onClick={() => handleSelectGame(game)}
+                  disabled={isGameSelectionDisabled}
+                >
+                  {game}
+                </button>
+              ))
+            ) : (
+              <p>No games available to join right now.</p>
+            )}
+            {selectedGameInfo && (
+              <div className="selected-game-info">{selectedGameInfo}</div>
+            )}
+          </div>
+        </div>
+      </div>
+      )}
     </div>
   );
 }
