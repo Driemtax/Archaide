@@ -166,7 +166,7 @@ func (g *PongGame) Start() {
 
 	g.isRunning = true
 	g.Reset()                                        // Set initial ball and paddle positions/velocities
-	g.ticker = time.NewTicker(16 * time.Millisecond) // ~60 FPS
+	g.ticker = time.NewTicker(60 * time.Millisecond) // ~60 FPS
 	g.playerMux.Unlock()
 
 	log.Printf("[Game %s] Starting game loop.", g.gameID)
