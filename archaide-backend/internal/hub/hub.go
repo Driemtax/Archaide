@@ -36,7 +36,7 @@ type Hub struct {
 
 func NewHub() *Hub {
 	return &Hub{
-		incoming:              make(chan hubMessage),
+		incoming:              make(chan hubMessage, 256),
 		Register:              make(chan *Client),
 		unregister:            make(chan *Client),
 		clients:               make(map[*Client]bool),
@@ -113,7 +113,6 @@ func (h *Hub) Run() {
 
 // Handles all messages from clients that are not inside a game
 func (h *Hub) handleLobbyMessage(client *Client, msg message.Message) {
-	log.Printf("Received lobby message type '%s' from client %s", msg.Type, client.Id)
 	switch msg.Type {
 	case message.SelectGame:
 		var payload message.SelectGamePayload
@@ -179,7 +178,6 @@ func (h *Hub) checkAllPlayersSelectedGameInternal() bool {
 // of the game and starts it
 func (h *Hub) selectAndStartGame() {
 	h.gameMutex.Lock()
-	defer h.gameMutex.Unlock()
 
 	if len(h.currentGameSelections) == 0 {
 		log.Println("No selections made, cannot select a game.")
@@ -263,6 +261,9 @@ func (h *Hub) selectAndStartGame() {
 		client.SelectedGame = ""
 	}
 
+	// Please unlock mutex here, scince broadcastLobbyUpdate also tries to Lock.
+	// It was a very painful sunday morning :cry:
+	h.gameMutex.Unlock()
 	// Broadcast to all players the new Lobby state
 	h.broadcastLobbyUpdate()
 }

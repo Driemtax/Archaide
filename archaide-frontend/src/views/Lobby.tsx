@@ -34,12 +34,12 @@ function Lobby(): JSX.Element {
 
   // Game states
   const [pongState, setPongState] = useState<PongStatePayload>({
-    BallX: 400,
-    BallY: 300,
-    Paddle1Y: 300,
-    Paddle2Y: 300,
-    Score1: 0,
-    Score2: 0
+    ball_x: 400,
+    ball_y: 300,
+    paddle_1_y: 300,
+    paddle_2_y: 300,
+    score_1: 0,
+    score_2: 0
   });
 
   // --- WebSocket Logic ---
@@ -55,6 +55,8 @@ function Lobby(): JSX.Element {
         message = JSON.parse(messageData) as ServerMessage;
 
         logMessage(`<- Received: ${JSON.stringify(message, null, 2)}`);
+
+        console.log("Message received:", message);
 
         switch (message.type) {
           case "welcome": {
@@ -273,7 +275,7 @@ function Lobby(): JSX.Element {
               ))
             ) : (
               <p>No games available to join right now.</p>
-            )}onMove("up")
+            )}
           </div>
         </div>
       </div>
