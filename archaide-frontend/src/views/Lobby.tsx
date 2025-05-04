@@ -8,7 +8,8 @@ import type {
   ErrorPayload,
   ClientSelectGameMessage,
   ClientSelectGamePayload,
-  PongStatePayload
+  PongStatePayload,
+  PlayerInfo,
 } from "../types";
 import "./Lobby.css";
 import PongGame from "../games/pong/Pong";
@@ -21,7 +22,7 @@ function Lobby(): JSX.Element {
   const [connectionStatus, setConnectionStatus] =
     useState<string>("Connecting...");
   const [logMessages, setLogMessages] = useState<string[]>([]);
-  const [players, setPlayers] = useState<Record<string, number>>({});
+  const [players, setPlayers] = useState<Record<string, PlayerInfo>>({});
   const [availableGames, setAvailableGames] = useState<string[]>([]);
   const [myClientId, setMyClientId] = useState<string>("");
   const [selectedGame, setSelectedGame] = useState<string>("");
@@ -39,7 +40,7 @@ function Lobby(): JSX.Element {
     Paddle1Y: 300,
     Paddle2Y: 300,
     Score1: 0,
-    Score2: 0
+    Score2: 0,
   });
 
   // --- WebSocket Logic ---
@@ -76,7 +77,7 @@ function Lobby(): JSX.Element {
             setSelectedGameInfo(
               `Game selected: ${payload.selectedGame}! Waiting for game start...`,
             );
-            setSelectedGame(payload.selectedGame)
+            setSelectedGame(payload.selectedGame);
             setIsGameSelectionDisabled(true);
             break;
           }
@@ -219,64 +220,69 @@ function Lobby(): JSX.Element {
   return (
     <div className="page-container">
       <div className="game-canvas-container">
-      {selectedGame === 'Pong' && (
-        <PongGame 
-          gameState={pongState}
-          onMove={(direction) => {
-            ws.current?.send(JSON.stringify({
-              type: "pong_input",
-              payload: { direction }
-            }))
-          }}/>
-      )}
+        {selectedGame === "Pong" && (
+          <PongGame
+            gameState={pongState}
+            onMove={(direction) => {
+              ws.current?.send(
+                JSON.stringify({
+                  type: "pong_input",
+                  payload: { direction },
+                }),
+              );
+            }}
+          />
+        )}
       </div>
       {selectedGame === "" && (
         <div className="lobby-container">
-        <h1>Archaide Lobby</h1>
+          <h1>Archaide Lobby</h1>
 
-        <div className="log-container" ref={logDivRef}>
-          {logMessages.map((msg, index) => (
-            <p key={index}>{msg}</p>
-          ))}
-        </div>
-
-        <div className="status-container">Status: {connectionStatus}</div>
-
-        <div className="main-content">
-          <div className="players-container">
-            <h2>Players in Lobby</h2>
-            {Object.keys(players).length > 0 ? (
-              Object.entries(players).map(([clientId, score]) => (
-                <div key={clientId} className="player">
-                  <strong>
-                    {clientId === myClientId ? `${clientId} (You)` : clientId}:
-                  </strong>{" "}
-                  {score} points
-                </div>
-              ))
-            ) : (
-              <p>No other players currently in the lobby.</p>
-            )}
+          <div className="log-container" ref={logDivRef}>
+            {logMessages.map((msg, index) => (
+              <p key={index}>{msg}</p>
+            ))}
           </div>
 
-          <div className="games-container">
-            <h2>Select a Game</h2>
-            {availableGames.length > 0 ? (
-              availableGames.map((game) => (
-                <button
-                  key={game}
-                  onClick={() => handleSelectGame(game)}
-                  disabled={isGameSelectionDisabled}
-                >
-                  {game}
-                </button>
-              ))
-            ) : (
-              <p>No games available to join right now.</p>
-            )}onMove("up")
+          <div className="status-container">Status: {connectionStatus}</div>
+
+          <div className="main-content">
+            <div className="players-container">
+              <h2>Players in Lobby</h2>
+              {Object.keys(players).length > 0 ? (
+                Object.entries(players).map(([clientId, playerInfo]) => (
+                  <div key={clientId} className="player">
+                    <strong>
+                      {clientId === myClientId ? `${clientId} (You)` : clientId}
+                      :
+                    </strong>{" "}
+                    {playerInfo.score} points
+                  </div>
+                ))
+              ) : (
+                <p>No other players currently in the lobby.</p>
+              )}
+            </div>
+
+            <div className="games-container">
+              <h2>Select a Game</h2>
+              {availableGames.length > 0 ? (
+                availableGames.map((game) => (
+                  <button
+                    key={game}
+                    onClick={() => handleSelectGame(game)}
+                    disabled={isGameSelectionDisabled}
+                  >
+                    {game}
+                  </button>
+                ))
+              ) : (
+                <p>No games available to join right now.</p>
+              )}
+              onMove("up")
+            </div>
           </div>
         </div>
-      </div>
       )}
     </div>
   );
