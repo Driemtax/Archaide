@@ -4,8 +4,13 @@ export interface WelcomePayload {
   currentGames?: string[];
 }
 
+export interface PlayerInfo {
+  score: number;
+  inGame: boolean;
+}
+
 export interface UpdateLobbyPayload {
-  players: Record<string, number>; // Maps clientId (string) to score (number)
+  players: Record<string, PlayerInfo>;
 }
 
 export interface GameSelectedPayload {
@@ -31,7 +36,7 @@ export type ServerMessage =
   | { type: "game_selected"; payload: GameSelectedPayload }
   | { type: "error"; payload: ErrorPayload }
   | { type: string; payload: unknown } // Fallback for unhandled/generic types
-  | { type: "pong_state"; payload: PongStatePayload};
+  | { type: "pong_state"; payload: PongStatePayload };
 
 export interface ClientSelectGamePayload {
   game: string;
@@ -48,5 +53,3 @@ export interface ClientSelectGameMessage extends ClientMessageBase {
 }
 
 export type ClientMessage = ClientSelectGameMessage;
-
-

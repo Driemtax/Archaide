@@ -333,21 +333,6 @@ func (h *Hub) broadcastLobbyUpdate() {
 
 // BroadcastMessage - Sendet an ALLE verbundenen Clients (wird jetzt intern genutzt)
 func (h *Hub) broadcastMessageInternal(msgType message.MessageType, payload any) {
-	payloadBytes, err := json.Marshal(payload)
-	if err != nil {
-		log.Printf("Error marshalling payload for broadcast: %v", err)
-		return
-	}
-	message := message.Message{
-		Type:    msgType,
-		Payload: json.RawMessage(payloadBytes),
-	}
-	messageBytes, err := json.Marshal(message)
-	if err != nil {
-		log.Printf("Error marshalling message for broadcast: %v", err)
-		return
-	}
-
 	h.gameMutex.RLock()
 	log.Printf("Broadcasting message type '%s' to %d clients", msgType, len(h.clients))
 	clientList := make([]*Client, 0, len(h.clients))
@@ -357,7 +342,7 @@ func (h *Hub) broadcastMessageInternal(msgType message.MessageType, payload any)
 	h.gameMutex.RUnlock()
 
 	for _, client := range clientList {
-		err := client.SendMessage(msgType, messageBytes)
+		err := client.SendMessage(msgType, payload)
 		if err != nil {
 			log.Printf("Error broadcasting message type %s to client %s: %v", msgType, client.Id, err)
 		}
