@@ -1,26 +1,19 @@
-import { useEffect, useState } from "react";
 import { ClientMessage } from "../types";
 import { useWebSocketContext } from "../hooks/useWebSocketContext";
 
 export default function LobbyView() {
-  const {
-    readyState,
-    myClientId,
-    players,
-    availableGames,
-    sendMessage,
-    gameError,
-  } = useWebSocketContext();
-
-  const [isGameSelectionPending, setIsGameSelectionPending] = useState(false);
+  const { readyState, myClientId, players, availableGames, sendMessage } =
+    useWebSocketContext();
 
   const handleSelectGame = (gameName: string) => {
+    // TODO display to the client an error message if not enough players are inside of the lobby
+    // BTW the server should also send an error message...
+    // Currently the server just moves the client back to the lobby
     if (readyState !== WebSocket.OPEN) {
       // TODO implement some kind of toast system or notification system...
       alert("Not connected to server.");
       return;
     }
-    setIsGameSelectionPending(true);
     const message: ClientMessage = {
       type: "select_game",
       payload: { game: gameName },
@@ -28,23 +21,9 @@ export default function LobbyView() {
     sendMessage(message);
   };
 
-  // If the component is newly rendered it came back because the
-  // player went back to the lobby so we always reset the game selection state
-  // to false.
-  useEffect(() => {
-    setIsGameSelectionPending(false);
-  }, []);
-
   return (
     <div>
       <h1>Archaide Lobby</h1>
-
-      {/* Status Container  */}
-      <h3>
-        Status: {readyState}{" "}
-        {readyState === WebSocket.OPEN && `(ID: ${myClientId})`}
-        {gameError && <p> Error: {gameError}</p>}
-      </h3>
 
       <h2>Players in Lobby</h2>
       {Object.keys(players).length > 0 ? (
@@ -53,8 +32,13 @@ export default function LobbyView() {
             <li key={clientId}>
               <strong>
                 {clientId === myClientId ? `${clientId} (You)` : clientId}:
-              </strong>{" "}
-              Score: {playerInfo.score} points
+              </strong>
+              <ul>
+                <li>Score: {playerInfo.score} points</li>
+                <li>
+                  Selected Game: {playerInfo.selectedGame || "No game selected"}
+                </li>
+              </ul>
             </li>
           ))}
         </ul>
@@ -69,9 +53,7 @@ export default function LobbyView() {
             <li key={game}>
               <button
                 onClick={() => handleSelectGame(game)}
-                disabled={
-                  isGameSelectionPending || readyState !== WebSocket.OPEN
-                }
+                disabled={readyState !== WebSocket.OPEN}
               >
                 {game}
               </button>

@@ -114,6 +114,9 @@ function WebSocketProvider({ url, children }: WebSocketProviderProps) {
           setPlayers(payload.players ?? {});
           break;
         }
+        case "back_to_lobby":
+          setSelectedGame("");
+          break;
         case "game_selected": {
           const payload = message.payload as GameSelectedPayload;
           setSelectedGame(payload.selectedGame);

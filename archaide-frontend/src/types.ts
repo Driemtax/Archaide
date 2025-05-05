@@ -7,6 +7,7 @@ export interface WelcomePayload {
 export interface PlayerInfo {
   score: number;
   inGame: boolean;
+  selectedGame: string;
 }
 
 export interface UpdateLobbyPayload {

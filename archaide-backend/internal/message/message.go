@@ -38,8 +38,9 @@ type WelcomeMessage struct {
 }
 
 type PlayerInfo struct {
-	Score  int  `json:"score"`
-	InGame bool `json:"inGame"`
+	Score        int    `json:"score"`
+	InGame       bool   `json:"inGame"`
+	SelectedGame string `json:"selectedGame"`
 }
 
 // LobbyUpdateMessage contains the current state of the lobby (players and their scores)
