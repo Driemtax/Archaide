@@ -72,6 +72,8 @@ func (h *Hub) Run() {
 					if activeGame, gameExists := h.activeGames[gameID]; gameExists {
 						activeGame.RemovePlayer(client)
 						log.Printf("Removed client %s from game %s", client.GetID(), activeGame.GetID())
+						// TODO check if the game has to be stopped and terminated
+						// We should move all player back to the lobby
 					}
 					delete(h.clientToGame, client)
 				}
@@ -179,7 +181,6 @@ func (h *Hub) checkAllPlayersSelectedGameInternal() bool {
 // of the game and starts it
 func (h *Hub) selectAndStartGame() {
 	h.gameMutex.Lock()
-	defer h.gameMutex.Unlock()
 
 	if len(h.currentGameSelections) == 0 {
 		log.Println("No selections made, cannot select a game.")
@@ -248,7 +249,7 @@ func (h *Hub) selectAndStartGame() {
 		} else {
 			// Inform the client that a game will start
 			startPayload := message.GameSelectedMessage{SelectedGame: selectedGameName, GameID: gameID}
-			client.SendMessage(message.GameSelected, startPayload) // Oder eine neue MessageType "GameStarting"
+			client.SendMessage(message.GameSelected, startPayload)
 			log.Printf("Added player %s to game %s", client.Id, gameID)
 		}
 	}
@@ -263,6 +264,10 @@ func (h *Hub) selectAndStartGame() {
 		client.SelectedGame = ""
 	}
 
+	log.Printf("Cleared all previous game selection!\n")
+
+	// TODO remove this lars fixed it and i don't deserve the honor haha
+	h.gameMutex.Unlock()
 	// Broadcast to all players the new Lobby state
 	h.broadcastLobbyUpdate()
 }
