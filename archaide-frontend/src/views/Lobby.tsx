@@ -233,6 +233,7 @@ function Lobby(): JSX.Element {
             }}
           />
         )}
+        {selectedGame === "Asteroids" && <h1>Going to play Asteroids</h1>}
       </div>
       {selectedGame === "" && (
         <div className="lobby-container">

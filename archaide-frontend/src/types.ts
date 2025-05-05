@@ -30,6 +30,35 @@ export interface PongStatePayload {
   Score2: number;
 }
 
+export interface Vector2D {
+  x: number;
+  y: number;
+}
+
+export interface AsteroidsPlayerState {
+  pos: Vector2D;
+  dir: Vector2D;
+}
+
+export interface AsteroidsStatePayload {
+  players: Record<string, AsteroidsPlayerState>;
+}
+
+export type AsteroidsPlayerMove =
+  | "north"
+  | "east"
+  | "south"
+  | "west"
+  | "north_east"
+  | "north_west"
+  | "south_west"
+  | "south_east"
+  | "none";
+
+export interface AsteroidsInputPayload {
+  direction: AsteroidsPlayerMove;
+}
+
 export type ServerMessage =
   | { type: "welcome"; payload: WelcomePayload }
   | { type: "update_lobby"; payload: UpdateLobbyPayload }
@@ -52,4 +81,9 @@ export interface ClientSelectGameMessage extends ClientMessageBase {
   payload: ClientSelectGamePayload;
 }
 
-export type ClientMessage = ClientSelectGameMessage;
+export interface AsteroidsInputMessage extends ClientMessageBase {
+  type: "asteroids_input";
+  payload: AsteroidsInputPayload;
+}
+
+export type ClientMessage = ClientSelectGameMessage | AsteroidsInputMessage;
