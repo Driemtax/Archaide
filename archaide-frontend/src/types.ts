@@ -22,12 +22,12 @@ export interface ErrorPayload {
 }
 
 export interface PongStatePayload {
-  BallX: number;
-  BallY: number;
-  Paddle1Y: number;
-  Paddle2Y: number;
-  Score1: number;
-  Score2: number;
+  ball_x: number;
+  ball_y: number;
+  paddle_1_y: number;
+  paddle_2_y: number;
+  score_1: number;
+  score_2: number;
 }
 
 export interface Vector2D {
