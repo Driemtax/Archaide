@@ -15,6 +15,7 @@ import type {
   ClientMessage,
   PlayerInfo,
   AsteroidsStatePayload,
+  PongStatePayload,
 } from "../types";
 import { useWebSocket } from "../hooks/useWebSocket";
 
@@ -38,7 +39,8 @@ interface WebSocketContextState {
   gameError: string | null;
   /** State specific to the Asteroids game, null if not playing Asteroids. */
   asteroidState: AsteroidsStatePayload | null;
-  // Add other game states here as needed (e.g., pongState: PongStatePayload | null;)
+  /** State specific to the Pong game,. null if not playing Pong */
+  pongState: PongStatePayload | null;
   /** Function to send a message (properly typed ClientMessage) to the server. */
   sendMessage: (message: ClientMessage) => void;
   // Note: connect/disconnect functions are removed as connection is now managed by the URL prop.
@@ -69,11 +71,11 @@ function WebSocketProvider({ url, children }: WebSocketProviderProps) {
   const [gameError, setGameError] = useState<string | null>(null); // Server logic errors
   const [asteroidState, setAsteroidState] =
     useState<AsteroidsStatePayload | null>(null);
-  // const [pongState, setPongState] = useState<PongStatePayload | null>(null);
+  const [pongState, setPongState] = useState<PongStatePayload | null>(null);
 
   const resetGameStates = () => {
     setAsteroidState(null);
-    // setPongState(null);
+    setPongState(null);
   };
 
   const reset = () => {
@@ -123,10 +125,10 @@ function WebSocketProvider({ url, children }: WebSocketProviderProps) {
           setAsteroidState(message.payload as AsteroidsStatePayload);
           break;
         }
-        // case 'pong_state': {
-        //     setPongState(message.payload as PongStatePayload);
-        //   break;
-        // }
+        case "pong_state": {
+          setPongState(message.payload as PongStatePayload);
+          break;
+        }
         case "error": {
           const payload = message.payload as ErrorPayload;
           console.error(`Server Logic Error: ${payload.message}`);
@@ -208,7 +210,7 @@ function WebSocketProvider({ url, children }: WebSocketProviderProps) {
       selectedGame,
       gameError,
       asteroidState,
-      // TODO add PONG state here
+      pongState,
       sendMessage,
     }),
     [
@@ -220,6 +222,7 @@ function WebSocketProvider({ url, children }: WebSocketProviderProps) {
       selectedGame,
       gameError,
       asteroidState,
+      pongState,
       sendMessage,
     ],
   );

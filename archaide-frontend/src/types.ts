@@ -55,8 +55,14 @@ export type AsteroidsPlayerMove =
   | "south_east"
   | "none";
 
+export type PongPlayerMove = "up" | "down";
+
 export interface AsteroidsInputPayload {
   direction: AsteroidsPlayerMove;
+}
+
+export interface PongInputPayload {
+  direction: PongPlayerMove;
 }
 
 export type ServerMessage =
@@ -86,4 +92,12 @@ export interface AsteroidsInputMessage extends ClientMessageBase {
   payload: AsteroidsInputPayload;
 }
 
-export type ClientMessage = ClientSelectGameMessage | AsteroidsInputMessage;
+export interface PongInputMessage extends ClientMessageBase {
+  type: "pong_input";
+  payload: PongInputPayload;
+}
+
+export type ClientMessage =
+  | ClientSelectGameMessage
+  | AsteroidsInputMessage
+  | PongInputMessage;

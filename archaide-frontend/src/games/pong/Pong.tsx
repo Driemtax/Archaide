@@ -1,11 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Application, extend } from "@pixi/react";
-import { Container, Graphics} from "pixi.js";
-import type { PongStatePayload } from "../../types";
+import { Container, Graphics } from "pixi.js";
+import type {
+  ClientMessage,
+  PongPlayerMove,
+  PongStatePayload,
+} from "../../types";
+import { useWebSocketContext } from "../../hooks/useWebSocketContext";
 
 interface PongGameProps {
   gameState: PongStatePayload;
-  onMove: (direction: string) => void;
+  onMove: (direction: PongPlayerMove) => void;
 }
 
 interface HudProps {
@@ -17,7 +22,7 @@ const PaddleWidth = 20;
 const PaddleHeight = 100;
 const BallRadius = 10;
 
-const COUNTDOWN_START = 3;
+// const COUNTDOWN_START = 3;
 
 const BG_COLOR = 0x181818;
 const PADDLE_COLOR = 0xcccccc;
@@ -25,7 +30,7 @@ const BALL_COLOR = 0xd4ffd4;
 
 extend({ Container, Graphics });
 
-function GameHUD({player1Score, player2Score}: HudProps) {
+function GameHUD({ player1Score, player2Score }: HudProps) {
   return (
     <div
       style={{
@@ -83,9 +88,9 @@ function PongStage({ gameState, onMove }: PongGameProps) {
           g.fill();
         }}
         x={0}
-        y={gameState.paddle_1_y - (PaddleHeight / 2)}
+        y={gameState.paddle_1_y - PaddleHeight / 2}
       />
-      
+
       {/* Paddle 2 */}
       <pixiGraphics
         draw={(g: Graphics) => {
@@ -94,7 +99,7 @@ function PongStage({ gameState, onMove }: PongGameProps) {
           g.fill();
         }}
         x={800 - PaddleWidth}
-        y={gameState.paddle_2_y - (PaddleHeight / 2)}
+        y={gameState.paddle_2_y - PaddleHeight / 2}
       />
       {/* Ball */}
       <pixiGraphics
@@ -107,12 +112,13 @@ function PongStage({ gameState, onMove }: PongGameProps) {
         y={gameState.ball_y}
       />
     </pixiContainer>
-  )
+  );
 
-  return pixiContainer
+  return pixiContainer;
 }
 
-export default function PongGame(props: PongGameProps) {
+export default function PongGame() {
+  const { pongState, sendMessage } = useWebSocketContext();
   //const [countdown, setCountdown] = useState(COUNTDOWN_START);
 
   // useEffect(() => {
@@ -125,11 +131,29 @@ export default function PongGame(props: PongGameProps) {
   //   return () => clearInterval(timer)
 
   // })
+
+  const sendMove = (dir: PongPlayerMove) => {
+    const msg: ClientMessage = {
+      type: "pong_input",
+      payload: {
+        direction: dir,
+      },
+    };
+
+    sendMessage(msg);
+  };
+
+  if (!pongState) {
+    // Waiting for the first game state ensuring
+    // that a game state is always present
+    return <p>Loading game...</p>;
+  }
+
   return (
     <div style={{ width: 802, margin: "0 auto" }}>
       <GameHUD
-        player1Score={props.gameState.score_1}
-        player2Score={props.gameState.score_2}
+        player1Score={pongState?.score_1 || 0}
+        player2Score={pongState?.score_2 || 0}
       />
       <div style={{ border: "1px solid white" }}>
         <Application
@@ -138,7 +162,10 @@ export default function PongGame(props: PongGameProps) {
           backgroundColor={BG_COLOR}
           antialias
         >
-          <PongStage {...props} />
+          <PongStage
+            onMove={(dir: PongPlayerMove) => sendMove(dir)}
+            gameState={pongState}
+          />
         </Application>
       </div>
     </div>
