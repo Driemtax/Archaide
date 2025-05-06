@@ -13,14 +13,80 @@ import (
 )
 
 const (
-	INITIAL_PLAYER_SPEED float64 = 5.0
+	// Player Settings
+	INITIAL_PLAYER_SPEED      float64       = 250.0 // Units per secon
+	INITIAL_TURN_SPEED_DEG    float64       = 180.0 // Degrees per second
+	INITIAL_PLAYER_HEALTH     float64       = 3.0
+	PLAYER_RADIUS             float64       = 15.0
+	PLAYER_RESPAWN_INVINCIBLE time.Duration = 3 * time.Second
+	PLAYER_SHOOT_COOLDOWN     time.Duration = 250 * time.Millisecond
+
+	// Projectile Settings
+	PROJECTILE_SPEED    float64       = 400.0 // Units per second
+	PROJECTILE_LIFETIME time.Duration = 1500 * time.Millisecond
+	PROJECTILE_RADIUS   float64       = 3.0
+
+	// Asteroid Settings
+	INITIAL_ASTEROID_COUNT    int     = 8
+	ASTEROID_SPAWN_PADDING    float64 = 100.0 // The minimal distance from the center to spawn
+	ASTEROID_SPEED_MIN        float64 = 30.0
+	ASTEROID_SPEED_MAX        float64 = 80.0
+	ASTEROID_POINTS_LARGE     int     = 20
+	ASTEROID_POINTS_MIDDLE    int     = 50
+	ASTEROID_POINTS_SMALL     int     = 100
+	ASTEROID_SPLIT_COUNT      int     = 2  // Into how many pieces an asteroid breaks after getting hit
+	ASTEROID_SPLIT_ANGLE_VARY float64 = 30 // The degress of variance for the direction of asteroids after splitting
+
+	// Game World Settings
+	WORLD_WIDTH  float64 = 800.0
+	WORLD_HEIGHT float64 = 600.0
+
+	// Game Loop
+	TICK_RATE time.Duration = 33 * time.Millisecond // ~30 FPS
 )
 
-type AsteroidsPlayer struct {
-	Pos      component.Vector2D `json:"pos"`
-	Speed    float64            `json:"speed"`
-	Dir      component.Vector2D `json:"dir"`
-	PlayerID string             // Saving the id of the game.Player aka Client
+type Player struct {
+	Pos            component.Vector2D `json:"pos"`
+	Speed          float64            `json:"speed"`
+	Dir            component.Vector2D `json:"dir"`
+	TurnSpeed      float64
+	Health         component.Health
+	LastInput      AsteroidsInputPayload
+	PlayerID       string // Saving the id of the game.Player aka Client
+	Score          int
+	LastShotTime   time.Time
+	IsInvincible   bool
+	InvincibleTime time.Time
+	Radius         float64
+}
+
+type AsteroidType string
+
+const (
+	LARGE  AsteroidType = "large"
+	MIDDLE AsteroidType = "middle"
+	SMALL  AsteroidType = "small"
+)
+
+type Asteroid struct {
+	ID     string
+	Pos    component.Vector2D
+	Dir    component.Vector2D
+	Type   AsteroidType
+	Speed  float64
+	Radius float64
+	// Just for the display variant in the frontend
+	VariantIndex int
+}
+
+type Projectile struct {
+	ID        string
+	OwnerID   string
+	Pos       component.Vector2D
+	Dir       component.Vector2D
+	Speed     float64
+	SpawnTime time.Time
+	Radius    float64
 }
 
 type AsteroidsGame struct {
@@ -28,23 +94,28 @@ type AsteroidsGame struct {
 	// But anyways we are getting an interface to notify the hub
 	gameFinisher game.GameFinisher
 
-	gameID     string
-	players    map[string]*AsteroidsPlayer // Map Player Id to AsteroidPlayer State
-	playerMap  map[string]game.Player      // Map Player Id to game.Player aka Client
-	playerMux  sync.RWMutex
-	ticker     *time.Ticker
-	stopChan   chan bool
-	isRunning  bool
-	minPlayers int
-	maxPlayers int
+	gameID       string
+	players      map[string]*Player     // Map Player Id to AsteroidPlayer State
+	playerMap    map[string]game.Player // Map Player Id to game.Player aka Client
+	asteroids    map[string]*Asteroid
+	projectiles  map[string]*Projectile
+	playerMux    sync.RWMutex
+	ticker       *time.Ticker
+	stopChan     chan bool
+	isRunning    bool
+	minPlayers   int
+	maxPlayers   int
+	lastTickTime time.Time // For my delta time
 }
 
 func NewAsteroidsGame(finisher game.GameFinisher, id string) *AsteroidsGame {
 	return &AsteroidsGame{
 		gameFinisher: finisher,
 		gameID:       id,
-		players:      make(map[string]*AsteroidsPlayer),
+		players:      make(map[string]*Player),
 		playerMap:    make(map[string]game.Player),
+		asteroids:    make(map[string]*Asteroid),
+		projectiles:  make(map[string]*Projectile),
 		stopChan:     make(chan bool),
 		isRunning:    false,
 		minPlayers:   2,
@@ -71,11 +142,20 @@ func (g *AsteroidsGame) AddPlayer(player game.Player) error {
 		return fmt.Errorf("player %s already in game %s", playerID, g.gameID)
 	}
 
-	newPlayer := &AsteroidsPlayer{
-		Pos:      component.NewVector2D(0, 0),
-		Speed:    INITIAL_PLAYER_SPEED,
-		Dir:      component.NewVector2D(0, -1),
-		PlayerID: playerID,
+	spwanPos := component.NewVector2D(WORLD_WIDTH/2, WORLD_HEIGHT/2)
+
+	newPlayer := &Player{
+		Pos:            spwanPos,
+		Speed:          INITIAL_PLAYER_SPEED,
+		Dir:            component.NewVector2D(0, -1), // Point up
+		LastInput:      AsteroidsInputPayload{},
+		Health:         component.NewHealth(INITIAL_PLAYER_HEALTH),
+		TurnSpeed:      degreesToRadians(INITIAL_PLAYER_SPEED),
+		PlayerID:       playerID,
+		Score:          0,
+		IsInvincible:   true,
+		InvincibleTime: time.Now().Add(PLAYER_RESPAWN_INVINCIBLE),
+		Radius:         PLAYER_RADIUS,
 	}
 	g.players[playerID] = newPlayer
 	g.playerMap[playerID] = player // Saving the game.Player instance
@@ -113,8 +193,9 @@ func (g *AsteroidsGame) Start() {
 		return
 	}
 	g.isRunning = true
-	// g.ticker = time.NewTicker(32 * time.Millisecond) // ~30 FPS
-	g.ticker = time.NewTicker(10 * time.Second) // Slowed down updates for testing alot
+	g.lastTickTime = time.Now()
+	g.ticker = time.NewTicker(TICK_RATE)
+	g.initializeAsteroids()
 	g.playerMux.Unlock()
 
 	log.Printf("[Game %s] Starting game loop.", g.gameID)
@@ -132,19 +213,26 @@ func (g *AsteroidsGame) Start() {
 			if !g.isRunning {
 				return
 			}
-			fmt.Println("Tick is called lets update")
-			g.playerMux.Lock()
-			g.update()
-			g.sendGameState()
-			gameOver := g.checkGameOver() // internal check
-			g.playerMux.Unlock()
+			// Calculate Delta Time
+			now := time.Now()
+			dt := now.Sub(g.lastTickTime).Seconds()
+			g.lastTickTime = now
 
+			g.playerMux.Lock()
+
+			g.update(dt)
+
+			gameOver, _ := g.checkGameOver() // internal check
+
+			g.sendGameState()
+
+			g.playerMux.Unlock()
 			if gameOver {
 				log.Printf("[Game %s] Game over condition met.", g.gameID)
-				// First send the game over message
-				g.sendGameOver()
-				// Then stop the game.
-				// Thats important, otherwise the game gets stopped before the message will be sent
+				g.playerMux.RLock()
+				winnerID := g.determineWinner()
+				g.playerMux.RUnlock()
+				g.sendGameOver(winnerID)
 				g.Stop()
 				return
 			}
@@ -164,11 +252,23 @@ func (g *AsteroidsGame) Stop() {
 	}
 	g.isRunning = false
 
+	if g.ticker != nil {
+		g.ticker.Stop()
+		g.ticker = nil
+	}
+
 	// closing the stop channel
 	select {
 	case <-g.stopChan: // Already closed
 	default:
 		close(g.stopChan)
+	}
+
+	result := game.GameResult{
+		Scores: make(map[string]int),
+	}
+	for playerID, playerState := range g.players {
+		result.Scores[playerID] = playerState.Score
 	}
 
 	playersSnapshot := make([]game.Player, 0, len(g.playerMap))
@@ -178,12 +278,6 @@ func (g *AsteroidsGame) Stop() {
 	g.playerMux.Unlock()
 
 	log.Printf("[Game %s] Stopping game.", g.gameID)
-
-	// TODO: Implement the logic for the scores!
-	// Idea: Every player gets points for the time he survived
-	result := game.GameResult{
-		Scores: make(map[string]int), // Key: PlayerID
-	}
 
 	// Inform the hub that the game is finished and retrieve all
 	// players back to the lobby
@@ -204,7 +298,7 @@ func (g *AsteroidsGame) HandleMessage(player game.Player, msg message.Message) {
 		g.playerMux.Lock()
 		pState, ok := g.players[playerID]
 		if ok {
-			pState.UpdateDir(payload.Direction)
+			pState.HandleInput(payload)
 		} else {
 			log.Printf("[Game %s] Received input from player %s who is not in the internal state map.", g.gameID, playerID)
 		}
@@ -216,39 +310,98 @@ func (g *AsteroidsGame) HandleMessage(player game.Player, msg message.Message) {
 
 /// --- Finished implementing the game.Game interface ---
 
-func (g *AsteroidsGame) checkGameOver() bool {
-	return false
+// Checks if the game should end
+func (g *AsteroidsGame) checkGameOver() (bool, string) {
+	alivePlayers := []string{}
+	for playerID, pState := range g.players {
+		if !pState.Health.IsDead() {
+			alivePlayers = append(alivePlayers, playerID)
+		}
+	}
+
+	numPlayers := len(g.players)
+	numAlive := len(alivePlayers)
+
+	// Game ends if 0 or 1 players are left alive in a multiplayer game,
+	// or if the only player dies in a single-player game.
+	if numPlayers >= g.minPlayers && numAlive <= 1 {
+		if numAlive == 1 {
+			return true, alivePlayers[0] // Last one standing wins
+		} else {
+			return true, "" // All dead, no winner (or handle draw score later)
+		}
+	}
+
+	// Game doesn't end yet
+	return false, ""
 }
 
+// Sends the current game state to all connected players
 func (g *AsteroidsGame) sendGameState() {
-	playerStates := make(map[string]AsteroidsPlayerState) // Key: PlayerID
+	playerStates := make(map[string]PlayerState)
 	for pID, pState := range g.players {
-		playerStates[pID] = AsteroidsPlayerState{
-			Pos: pState.Pos,
-			Dir: pState.Dir,
+		playerStates[pID] = PlayerState{
+			Pos:          pState.Pos,
+			Dir:          pState.Dir,
+			Health:       pState.Health.HP,
+			IsInvincible: pState.IsInvincible,
+			Score:        pState.Score,
+			ID:           pState.PlayerID,
 		}
+	}
+
+	asteroidStates := make([]AsteroidState, 0, len(g.asteroids))
+	for _, ast := range g.asteroids {
+		asteroidStates = append(asteroidStates, AsteroidState{
+			ID:           ast.ID,
+			Pos:          ast.Pos,
+			Dir:          ast.Dir,
+			Typ:          ast.Type,
+			VariantIndex: ast.VariantIndex,
+		})
+	}
+
+	projectileStates := make([]ProjectileState, 0, len(g.projectiles))
+	for _, proj := range g.projectiles {
+		projectileStates = append(projectileStates, ProjectileState{
+			ID:  proj.ID,
+			Pos: proj.Pos,
+		})
 	}
 
 	gameStatePayload := AsteroidsStatePayload{
-		Players: playerStates,
+		Players:     playerStates,
+		Asteroids:   asteroidStates,
+		Projectiles: projectileStates,
 	}
 
-	fmt.Println("Sending a Game State")
+	// Send to each player
+	payloadBytes, err := json.Marshal(gameStatePayload)
+	if err != nil {
+		log.Printf("[Game %s] Error marshalling game state: %v", g.gameID, err)
+		return
+	}
 
-	// Send to each player using the saved player interface
+	stateMessage := message.Message{
+		Type:    message.AsteroidsState,
+		Payload: payloadBytes,
+	}
+
+	// fmt.Printf("[Game %s] Sending State: %d players, %d asteroids, %d projectiles\n", g.gameID, len(playerStates), len(asteroidStates), len(projectileStates))
+
 	for pID, p := range g.playerMap {
-		err := p.SendMessage(message.AsteroidsState, gameStatePayload)
-		if err != nil {
+		if err := p.SendMessage(stateMessage.Type, gameStatePayload); err != nil { // Send the struct directly if SendMessage handles marshalling
 			log.Printf("[Game %s] Error sending state to player %s: %v", g.gameID, pID, err)
+			// TODO we could consider to build that
+			// a player gets removed from a game if sending packages to him
+			// fails multiple time
 		}
 	}
 }
 
-func (g *AsteroidsGame) sendGameOver() {
+func (g *AsteroidsGame) sendGameOver(winnerID string) {
 	g.playerMux.RLock()
 	defer g.playerMux.RUnlock()
-
-	winnerID := "no_one_so_far"
 
 	gameOverPayload := AsteroidsGameOverPayload{
 		Winner: winnerID,
@@ -262,43 +415,4 @@ func (g *AsteroidsGame) sendGameOver() {
 			log.Printf("[Game %s] Error sending game over to player %s: %v", g.gameID, pID, err)
 		}
 	}
-}
-
-func (g *AsteroidsGame) update() {
-	return // stub
-	// // TODO move every asteroids
-	// for _, pState := range g.players {
-	// 	pState.Move()
-	// }
-}
-
-func (p *AsteroidsPlayer) UpdateDir(input PlayerInputMovement) {
-	dir := component.NewVector2D(0, 0)
-	switch input {
-	case North:
-		dir = component.NewVector2D(0, -1)
-	case East:
-		dir = component.NewVector2D(1, 0)
-	case South:
-		dir = component.NewVector2D(0, 1)
-	case West:
-		dir = component.NewVector2D(-1, 0)
-	case NorthEast:
-		dir = component.NewVector2D(1, -1)
-	case NorthWest:
-		dir = component.NewVector2D(-1, -1)
-	case SouthWest:
-		dir = component.NewVector2D(-1, 1)
-	case SouthEast:
-		dir = component.NewVector2D(1, 1)
-	case None:
-		dir = component.NewVector2D(0, 0)
-	}
-
-	p.Dir = dir.Normalize()
-}
-
-func (p *AsteroidsPlayer) Move() {
-	moveStep := p.Dir.Mul(p.Speed)
-	p.Pos = p.Pos.Add(moveStep)
 }
