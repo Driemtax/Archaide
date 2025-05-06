@@ -1,7 +1,7 @@
 package pong
 
 type PongInputPayload struct {
-	Direction string `json:"direction"` // e.g., "up", "down", "stop"
+	Direction string `json:"direction"`
 }
 
 // PongStatePayload defines the data sent to clients each tick.

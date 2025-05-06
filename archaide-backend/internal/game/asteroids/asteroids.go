@@ -1,6 +1,7 @@
 package asteroids
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"sync"
@@ -112,7 +113,8 @@ func (g *AsteroidsGame) Start() {
 		return
 	}
 	g.isRunning = true
-	g.ticker = time.NewTicker(32 * time.Millisecond) // ~30 FPS
+	// g.ticker = time.NewTicker(32 * time.Millisecond) // ~30 FPS
+	g.ticker = time.NewTicker(10 * time.Second) // Slowed down updates for testing alot
 	g.playerMux.Unlock()
 
 	log.Printf("[Game %s] Starting game loop.", g.gameID)
@@ -130,7 +132,7 @@ func (g *AsteroidsGame) Start() {
 			if !g.isRunning {
 				return
 			}
-
+			fmt.Println("Tick is called lets update")
 			g.playerMux.Lock()
 			g.update()
 			g.sendGameState()
@@ -189,27 +191,27 @@ func (g *AsteroidsGame) Stop() {
 }
 
 func (g *AsteroidsGame) HandleMessage(player game.Player, msg message.Message) {
-	// playerID := player.GetID()
+	playerID := player.GetID()
 
-	// switch msg.Type {
-	// case message.AsteroidsInput:
-	// 	var payload AsteroidsInputPayload
-	// 	if err := json.Unmarshal(msg.Payload, &payload); err != nil {
-	// 		log.Printf("[Game %s] Error unmarshalling AsteroidsInput from %s: %v", g.gameID, playerID, err)
-	// 		return
-	// 	}
+	switch msg.Type {
+	case message.AsteroidsInput:
+		var payload AsteroidsInputPayload
+		if err := json.Unmarshal(msg.Payload, &payload); err != nil {
+			log.Printf("[Game %s] Error unmarshalling AsteroidsInput from %s: %v", g.gameID, playerID, err)
+			return
+		}
 
-	// 	g.playerMux.Lock()
-	// 	pState, ok := g.players[playerID]
-	// 	if ok {
-	// 		pState.UpdateDir(payload.Direction)
-	// 	} else {
-	// 		log.Printf("[Game %s] Received input from player %s who is not in the internal state map.", g.gameID, playerID)
-	// 	}
-	// 	g.playerMux.Unlock()
-	// default:
-	// 	log.Printf("[Game %s] Received unhandled message type '%s' from player %s", g.gameID, msg.Type, playerID)
-	// }
+		g.playerMux.Lock()
+		pState, ok := g.players[playerID]
+		if ok {
+			pState.UpdateDir(payload.Direction)
+		} else {
+			log.Printf("[Game %s] Received input from player %s who is not in the internal state map.", g.gameID, playerID)
+		}
+		g.playerMux.Unlock()
+	default:
+		log.Printf("[Game %s] Received unhandled message type '%s' from player %s", g.gameID, msg.Type, playerID)
+	}
 }
 
 /// --- Finished implementing the game.Game interface ---
@@ -230,6 +232,8 @@ func (g *AsteroidsGame) sendGameState() {
 	gameStatePayload := AsteroidsStatePayload{
 		Players: playerStates,
 	}
+
+	fmt.Println("Sending a Game State")
 
 	// Send to each player using the saved player interface
 	for pID, p := range g.playerMap {
@@ -261,5 +265,40 @@ func (g *AsteroidsGame) sendGameOver() {
 }
 
 func (g *AsteroidsGame) update() {
-	// stub
+	return // stub
+	// // TODO move every asteroids
+	// for _, pState := range g.players {
+	// 	pState.Move()
+	// }
+}
+
+func (p *AsteroidsPlayer) UpdateDir(input PlayerInputMovement) {
+	dir := component.NewVector2D(0, 0)
+	switch input {
+	case North:
+		dir = component.NewVector2D(0, -1)
+	case East:
+		dir = component.NewVector2D(1, 0)
+	case South:
+		dir = component.NewVector2D(0, 1)
+	case West:
+		dir = component.NewVector2D(-1, 0)
+	case NorthEast:
+		dir = component.NewVector2D(1, -1)
+	case NorthWest:
+		dir = component.NewVector2D(-1, -1)
+	case SouthWest:
+		dir = component.NewVector2D(-1, 1)
+	case SouthEast:
+		dir = component.NewVector2D(1, 1)
+	case None:
+		dir = component.NewVector2D(0, 0)
+	}
+
+	p.Dir = dir.Normalize()
+}
+
+func (p *AsteroidsPlayer) Move() {
+	moveStep := p.Dir.Mul(p.Speed)
+	p.Pos = p.Pos.Add(moveStep)
 }

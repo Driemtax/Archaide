@@ -1,11 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Application, extend } from "@pixi/react";
-import { Container, Graphics} from "pixi.js";
-import type { PongStatePayload } from "../../types";
+import { Container, Graphics } from "pixi.js";
+import type {
+  ClientMessage,
+  PongPlayerMove,
+  PongStatePayload,
+} from "../../types";
+import { useWebSocketContext } from "../../hooks/useWebSocketContext";
 
 interface PongGameProps {
   gameState: PongStatePayload;
-  onMove: (direction: string) => void;
+  onMove: (direction: PongPlayerMove) => void;
 }
 
 interface HudProps {
@@ -17,7 +22,7 @@ const PaddleWidth = 20;
 const PaddleHeight = 100;
 const BallRadius = 10;
 
-const COUNTDOWN_START = 3;
+// const COUNTDOWN_START = 3;
 
 const BG_COLOR = 0x181818;
 const PADDLE_COLOR = 0xcccccc;
@@ -25,26 +30,30 @@ const BALL_COLOR = 0xd4ffd4;
 
 extend({ Container, Graphics });
 
-function GameHUD({player1Score, player2Score}: HudProps) {
+function GameHUD({ player1Score, player2Score }: HudProps) {
   return (
-    <div style={{
-      width: 800,
-      margin: "0 auto",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      color: "white",
-      fontFamily: "Arial, sans-serif",
-      userSelect: "none"
-    }}>
-      <h1 style={{ margin: "16px 0 8px 0", fontSize: 32 }}>PONG 2025</h1>
-      <div style={{
+    <div
+      style={{
+        width: 800,
+        margin: "0 auto",
         display: "flex",
-        justifyContent: "space-between",
-        width: "60%",
-        fontSize: 28,
-        marginBottom: 12
-      }}>
+        flexDirection: "column",
+        alignItems: "center",
+        color: "white",
+        fontFamily: "Arial, sans-serif",
+        userSelect: "none",
+      }}
+    >
+      <h1 style={{ margin: "16px 0 8px 0", fontSize: 32 }}>PONG 2025</h1>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          width: "60%",
+          fontSize: 28,
+          marginBottom: 12,
+        }}
+      >
         <span>Spieler 1: {player1Score}</span>
         <span>Spieler 2: {player2Score}</span>
       </div>
@@ -54,7 +63,7 @@ function GameHUD({player1Score, player2Score}: HudProps) {
         </div>
       )} */}
     </div>
-  )
+  );
 }
 
 function PongStage({ gameState, onMove }: PongGameProps) {
@@ -76,12 +85,12 @@ function PongStage({ gameState, onMove }: PongGameProps) {
           g.clear();
           g.fill(PADDLE_COLOR);
           g.rect(0, 0, PaddleWidth, PaddleHeight);
-          g.fill()
+          g.fill();
         }}
         x={0}
-        y={gameState.paddle_1_y - (PaddleHeight / 2)}
+        y={gameState.paddle_1_y - PaddleHeight / 2}
       />
-      
+
       {/* Paddle 2 */}
       <pixiGraphics
         draw={(g: Graphics) => {
@@ -90,7 +99,7 @@ function PongStage({ gameState, onMove }: PongGameProps) {
           g.fill();
         }}
         x={800 - PaddleWidth}
-        y={gameState.paddle_2_y - (PaddleHeight / 2)}
+        y={gameState.paddle_2_y - PaddleHeight / 2}
       />
       {/* Ball */}
       <pixiGraphics
@@ -103,12 +112,13 @@ function PongStage({ gameState, onMove }: PongGameProps) {
         y={gameState.ball_y}
       />
     </pixiContainer>
-  )
+  );
 
-  return pixiContainer
+  return pixiContainer;
 }
 
-export default function PongGame(props: PongGameProps) {
+export default function PongGame() {
+  const { pongState, sendMessage } = useWebSocketContext();
   //const [countdown, setCountdown] = useState(COUNTDOWN_START);
 
   // useEffect(() => {
@@ -121,16 +131,42 @@ export default function PongGame(props: PongGameProps) {
   //   return () => clearInterval(timer)
 
   // })
+
+  const sendMove = (dir: PongPlayerMove) => {
+    const msg: ClientMessage = {
+      type: "pong_input",
+      payload: {
+        direction: dir,
+      },
+    };
+
+    sendMessage(msg);
+  };
+
+  if (!pongState) {
+    // Waiting for the first game state ensuring
+    // that a game state is always present
+    return <p>Loading game...</p>;
+  }
+
   return (
     <div style={{ width: 802, margin: "0 auto" }}>
       <GameHUD
-        player1Score={props.gameState.score_1}
-        player2Score={props.gameState.score_2}
+        player1Score={pongState?.score_1 || 0}
+        player2Score={pongState?.score_2 || 0}
       />
-      <div style={{border: "1px solid white"}}>
-      <Application width={800} height={600} backgroundColor={BG_COLOR} antialias>
-        <PongStage {...props} />
-      </Application>
+      <div style={{ border: "1px solid white" }}>
+        <Application
+          width={800}
+          height={600}
+          backgroundColor={BG_COLOR}
+          antialias
+        >
+          <PongStage
+            onMove={(dir: PongPlayerMove) => sendMove(dir)}
+            gameState={pongState}
+          />
+        </Application>
       </div>
     </div>
   );

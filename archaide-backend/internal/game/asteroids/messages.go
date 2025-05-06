@@ -13,6 +13,7 @@ const (
 	NorthWest PlayerInputMovement = "north_west"
 	SouthWest PlayerInputMovement = "south_west"
 	SouthEast PlayerInputMovement = "south_east"
+	None      PlayerInputMovement = "none"
 )
 
 type AsteroidsInputPayload struct {

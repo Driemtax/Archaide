@@ -72,6 +72,8 @@ func (h *Hub) Run() {
 					if activeGame, gameExists := h.activeGames[gameID]; gameExists {
 						activeGame.RemovePlayer(client)
 						log.Printf("Removed client %s from game %s", client.GetID(), activeGame.GetID())
+						// TODO check if the game has to be stopped and terminated
+						// We should move all player back to the lobby
 					}
 					delete(h.clientToGame, client)
 				}
@@ -143,6 +145,10 @@ func (h *Hub) handleLobbyMessage(client *Client, msg message.Message) {
 			log.Printf("All %d players have selected a game. Determining winner...", len(h.clients))
 			h.selectAndStartGame()
 		} else {
+			// If not all players have selected a game
+			// a lobby updated will be broadcasted
+			// to show each player what the other player selected...
+			h.broadcastLobbyUpdate()
 			log.Printf("%d out of %d players have selected a game.", len(h.currentGameSelections), len(h.clients))
 		}
 
@@ -151,7 +157,7 @@ func (h *Hub) handleLobbyMessage(client *Client, msg message.Message) {
 	}
 }
 
-// checkAllPlayersSelectedGameInternal prüft intern, ob alle gewählt haben (benötigt externen Lock)
+// Checks if all players inside of the lobby voted
 func (h *Hub) checkAllPlayersSelectedGameInternal() bool {
 	if len(h.clients) == 0 {
 		// We can't start a game without having clients
@@ -169,8 +175,6 @@ func (h *Hub) checkAllPlayersSelectedGameInternal() bool {
 		}
 	}
 
-	// Only starts if at least two players are inside of the lobby
-	// and every player has selected a game
 	return lobbyClients > 0 && selectedCount == lobbyClients
 }
 
@@ -246,7 +250,7 @@ func (h *Hub) selectAndStartGame() {
 		} else {
 			// Inform the client that a game will start
 			startPayload := message.GameSelectedMessage{SelectedGame: selectedGameName, GameID: gameID}
-			client.SendMessage(message.GameSelected, startPayload) // Oder eine neue MessageType "GameStarting"
+			client.SendMessage(message.GameSelected, startPayload)
 			log.Printf("Added player %s to game %s", client.Id, gameID)
 		}
 	}
@@ -261,6 +265,8 @@ func (h *Hub) selectAndStartGame() {
 		client.SelectedGame = ""
 	}
 
+	log.Printf("Cleared all previous game selection!\n")
+
 	// Please unlock mutex here, scince broadcastLobbyUpdate also tries to Lock.
 	// It was a very painful sunday morning :cry:
 	h.gameMutex.Unlock()
@@ -271,7 +277,6 @@ func (h *Hub) selectAndStartGame() {
 // Has to be called from a game after it is finished
 func (h *Hub) GameFinished(gameID string, result game.GameResult) {
 	h.gameMutex.Lock()
-	defer h.gameMutex.Unlock()
 
 	log.Printf("Game %s finished. Processing results.", gameID)
 
@@ -304,6 +309,10 @@ func (h *Hub) GameFinished(gameID string, result game.GameResult) {
 		h.updateScoresInternal(result.Scores)
 	}
 
+	// Again unlock before broadcasting a lobby update!!!
+	// By now im sick of myself haha
+	h.gameMutex.Unlock()
+
 	// Notify all players for the lobby update
 	h.broadcastLobbyUpdate()
 
@@ -321,8 +330,9 @@ func (h *Hub) broadcastLobbyUpdate() {
 		// Check if the client is currently inside a game
 		_, inGame := h.clientToGame[client]
 		playerInfos[client.Id] = message.PlayerInfo{
-			Score:  client.Score,
-			InGame: inGame,
+			Score:        client.Score,
+			InGame:       inGame,
+			SelectedGame: client.SelectedGame,
 		}
 	}
 	h.gameMutex.RUnlock()
@@ -358,7 +368,7 @@ func (h *Hub) checkAndPotentiallyStartGame() {
 	h.gameMutex.RUnlock()
 
 	if canStart {
-		log.Printf("All %d lobby players have selected a game. Determining winner...", len(h.currentGameSelections)) // Logik hier anpassen
+		log.Printf("All %d lobby players have selected a game. Determining winner...", len(h.currentGameSelections))
 		h.selectAndStartGame()
 	} else {
 		h.gameMutex.RLock()
@@ -371,6 +381,8 @@ func (h *Hub) checkAndPotentiallyStartGame() {
 		selectedCount := len(h.currentGameSelections)
 		h.gameMutex.RUnlock()
 		if lobbyClientsCount > 0 {
+			// TODO we could broadcast in the lobby updates to the client
+			// who has selected a game and who
 			log.Printf("%d out of %d lobby players have selected a game.", selectedCount, lobbyClientsCount)
 		}
 	}
