@@ -35,6 +35,7 @@ export default function LobbyView() {
               </strong>
               <ul>
                 <li>Score: {playerInfo.score} points</li>
+                <li>In Game: {playerInfo.inGame ? "true" : "false"}</li>
                 <li>
                   Selected Game: {playerInfo.selectedGame || "No game selected"}
                 </li>

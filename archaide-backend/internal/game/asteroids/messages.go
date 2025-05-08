@@ -2,31 +2,40 @@ package asteroids
 
 import "github.com/Driemtax/Archaide/internal/component"
 
-type PlayerInputMovement string
-
-const (
-	North     PlayerInputMovement = "north"
-	East      PlayerInputMovement = "east"
-	South     PlayerInputMovement = "south"
-	West      PlayerInputMovement = "west"
-	NorthEast PlayerInputMovement = "north_east"
-	NorthWest PlayerInputMovement = "north_west"
-	SouthWest PlayerInputMovement = "south_west"
-	SouthEast PlayerInputMovement = "south_east"
-	None      PlayerInputMovement = "none"
-)
-
+// Always tells the server if the button is currently pressed or not
 type AsteroidsInputPayload struct {
-	Direction PlayerInputMovement `json:"direction"`
+	Left  bool `json:"left"`
+	Right bool `json:"right"`
+	Up    bool `json:"up"`
+	Shoot bool `json:"shoot"`
 }
 
-type AsteroidsPlayerState struct {
+type PlayerState struct {
+	ID           string             `json:"id"`
+	Pos          component.Vector2D `json:"pos"`
+	Dir          component.Vector2D `json:"dir"`
+	Health       float64            `json:"health"`
+	IsInvincible bool               `json:"isInvincible"`
+	Score        int                `json:"score"`
+}
+
+type AsteroidState struct {
+	ID           string             `json:"id"`
+	Pos          component.Vector2D `json:"pos"`
+	Dir          component.Vector2D `json:"dir"`
+	VariantIndex int                `json:"variantIndex"`
+	Typ          AsteroidType       `json:"type"`
+}
+
+type ProjectileState struct {
+	ID  string             `json:"id"`
 	Pos component.Vector2D `json:"pos"`
-	Dir component.Vector2D `json:"dir"`
 }
 
 type AsteroidsStatePayload struct {
-	Players map[string]AsteroidsPlayerState `json:"players"`
+	Players     map[string]PlayerState `json:"players"`
+	Asteroids   []AsteroidState        `json:"asteroids"`
+	Projectiles []ProjectileState      `json:"projectiles"`
 }
 
 type AsteroidsGameOverPayload struct {

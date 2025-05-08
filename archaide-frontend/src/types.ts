@@ -39,27 +39,38 @@ export interface Vector2D {
 export interface AsteroidsPlayerState {
   pos: Vector2D;
   dir: Vector2D;
+  health: number;
+  isInvincible: boolean;
+  score: number;
+  id: string;
+}
+
+export interface AsteroidsAsteroidState {
+  id: string;
+  pos: Vector2D;
+  dir: Vector2D;
+  type: "large" | "middle" | "small";
+  variantIndex: 0 | 1 | 2;
+}
+
+export interface AsteroidsProjectileState {
+  id: string;
+  pos: Vector2D;
 }
 
 export interface AsteroidsStatePayload {
   players: Record<string, AsteroidsPlayerState>;
+  asteroids: AsteroidsAsteroidState[];
+  projectiles: AsteroidsProjectileState[];
 }
-
-export type AsteroidsPlayerMove =
-  | "north"
-  | "east"
-  | "south"
-  | "west"
-  | "north_east"
-  | "north_west"
-  | "south_west"
-  | "south_east"
-  | "none";
 
 export type PongPlayerMove = "up" | "down";
 
 export interface AsteroidsInputPayload {
-  direction: AsteroidsPlayerMove;
+  left: boolean;
+  right: boolean;
+  up: boolean;
+  shoot: boolean;
 }
 
 export interface PongInputPayload {
