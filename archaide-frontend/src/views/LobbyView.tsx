@@ -2,6 +2,13 @@ import { ClientMessage } from "../types";
 import { useWebSocketContext } from "../hooks/useWebSocketContext";
 import { Button } from "@/components/ui/button";
 import { AvatarFallback, AvatarImage, Avatar } from "@/components/ui/avatar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default function LobbyView() {
   const { readyState, myClientId, players, availableGames, sendMessage } =
@@ -55,18 +62,26 @@ export default function LobbyView() {
 
       <h2>Select a Game</h2>
       {availableGames.length > 0 ? (
-        <ul>
+        <div className="grid grid-cols-4 gap-4">
           {availableGames.map((game) => (
-            <li key={game}>
-              <Button
-                onClick={() => handleSelectGame(game)}
-                disabled={readyState !== WebSocket.OPEN}
-              >
-                {game}
-              </Button>
-            </li>
+            <Card key={game}>
+              <CardHeader>
+                <CardTitle>{game}</CardTitle>
+                <CardDescription>
+                  Select the game if you want to play it
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  onClick={() => handleSelectGame(game)}
+                  disabled={readyState !== WebSocket.OPEN}
+                >
+                  Select
+                </Button>
+              </CardContent>
+            </Card>
           ))}
-        </ul>
+        </div>
       ) : (
         <p>No games available right now.</p>
       )}
