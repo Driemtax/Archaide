@@ -1,5 +1,7 @@
 import { ClientMessage } from "../types";
 import { useWebSocketContext } from "../hooks/useWebSocketContext";
+import { Button } from "@/components/ui/button";
+import { AvatarFallback, AvatarImage, Avatar } from "@/components/ui/avatar";
 
 export default function LobbyView() {
   const { readyState, myClientId, players, availableGames, sendMessage } =
@@ -30,6 +32,10 @@ export default function LobbyView() {
         <ul>
           {Object.entries(players).map(([clientId, playerInfo]) => (
             <li key={clientId}>
+              <Avatar>
+                <AvatarImage src="https://avatar.iran.liara.run/public" />
+                <AvatarFallback>CN</AvatarFallback>
+              </Avatar>
               <strong>
                 {clientId === myClientId ? `${clientId} (You)` : clientId}:
               </strong>
@@ -52,12 +58,12 @@ export default function LobbyView() {
         <ul>
           {availableGames.map((game) => (
             <li key={game}>
-              <button
+              <Button
                 onClick={() => handleSelectGame(game)}
                 disabled={readyState !== WebSocket.OPEN}
               >
                 {game}
-              </button>
+              </Button>
             </li>
           ))}
         </ul>
