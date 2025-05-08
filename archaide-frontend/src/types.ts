@@ -8,6 +8,8 @@ export interface PlayerInfo {
   score: number;
   inGame: boolean;
   selectedGame: string;
+  name: string;
+  avatarUrl: string;
 }
 
 export interface UpdateLobbyPayload {

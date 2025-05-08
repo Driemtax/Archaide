@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/Driemtax/Archaide/internal/character"
 	"github.com/Driemtax/Archaide/internal/game"
 	"github.com/Driemtax/Archaide/internal/message"
 	"github.com/gorilla/websocket"
@@ -24,6 +25,7 @@ type Client struct {
 	Id           string
 	Score        int
 	SelectedGame string
+	Character    *character.Character
 	gameID       string // The id of the game the user is inside
 }
 

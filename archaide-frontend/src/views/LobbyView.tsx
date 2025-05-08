@@ -9,15 +9,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { toast } from "sonner";
 
 export default function LobbyView() {
   const { readyState, myClientId, players, availableGames, sendMessage } =
     useWebSocketContext();
 
   const handleSelectGame = (gameName: string) => {
-    // TODO display to the client an error message if not enough players are inside of the lobby
-    // BTW the server should also send an error message...
-    // Currently the server just moves the client back to the lobby
+    console.log(Object.keys(players));
+    if (Object.keys(players).length < 2) {
+      toast(
+        "❌ There have to be at least two players in the lobby to start a game",
+      );
+      return;
+    }
     if (readyState !== WebSocket.OPEN) {
       // TODO implement some kind of toast system or notification system...
       alert("Not connected to server.");
@@ -40,9 +45,10 @@ export default function LobbyView() {
           {Object.entries(players).map(([clientId, playerInfo]) => (
             <li key={clientId}>
               <Avatar>
-                <AvatarImage src="https://avatar.iran.liara.run/public" />
+                <AvatarImage src={playerInfo.avatarUrl} />
                 <AvatarFallback>CN</AvatarFallback>
               </Avatar>
+              <p>{playerInfo.name}</p>
               <strong>
                 {clientId === myClientId ? `${clientId} (You)` : clientId}:
               </strong>
