@@ -9,7 +9,7 @@ import { useRef } from "react";
 extend({ Container });
 
 export default function AsteroidsStage() {
-  const { asteroidState } = useWebSocketContext();
+  const { asteroidState, myClientId } = useWebSocketContext();
   const rotation = useRef({
     value: 0,
   });
@@ -21,7 +21,7 @@ export default function AsteroidsStage() {
   return (
     <pixiContainer>
       {Object.entries(asteroidState?.players || {}).map(([, p]) => (
-        <Player state={p} />
+        <Player state={p} clientID={myClientId} />
       ))}
       {asteroidState?.projectiles?.map((p) => <Projectile state={p} />)}
       {asteroidState?.asteroids?.map((a) => (

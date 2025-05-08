@@ -8,12 +8,18 @@ extend({ Container, Graphics, Sprite });
 
 interface PlayerProps {
   state: AsteroidsPlayerState;
+  clientID: string;
 }
 
 export default function Player(props: PlayerProps) {
-  const { state } = props;
+  const { state, clientID } = props;
 
-  const assetPath = "assets/sprite_asteroids_player.png";
+  let assetPath;
+  if (clientID === state.id) {
+    assetPath = "assets/sprite_asteroids_own_player.png";
+  } else {
+    assetPath = "assets/sprite_asteroids_player.png";
+  }
   const texture = PIXI.Assets.get<Texture>(assetPath);
   const angleFromXAxis = Math.atan2(state.dir.y, state.dir.x);
   const rotation = angleFromXAxis + Math.PI / 2;

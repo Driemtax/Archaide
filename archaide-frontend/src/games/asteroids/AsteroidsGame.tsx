@@ -23,6 +23,7 @@ const ASTEROID_ASSET_PATHS = [
   "assets/sprite_small_asteroid1.png",
   "assets/sprite_small_asteroid2.png",
   "assets/sprite_asteroids_player.png",
+  "assets/sprite_asteroids_own_player.png",
 ];
 
 export default function Asteroids() {
