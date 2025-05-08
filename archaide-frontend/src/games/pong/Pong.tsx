@@ -26,9 +26,9 @@ const BallRadius = 10;
 // const COUNTDOWN_START = 3;
 
 const BG_COLOR = 0x181818;
-const PADDLE_COLOR_1 = 0xcccccc;
-const PADDLE_COLOR_2 = 0xd4ffd4; //0xE7BEE7
-const BALL_COLOR = 0xE7BEE7;
+const PADDLE_COLOR_1 = 0x000000;
+const PADDLE_COLOR_2 = 0xcccccc;
+const BALL_COLOR = 0xd4ffd4;
 
 extend({ Container, Graphics });
 
@@ -93,8 +93,10 @@ function PongStage({ clientID, gameState, onMove }: PongGameProps) {
         draw={(g: Graphics) => {
           g.clear();
           g.fill(player === 1 ? PADDLE_COLOR_2 : PADDLE_COLOR_1);
+          g.setStrokeStyle({color: 0xffffff, width: 2})
           g.rect(0, 0, PaddleWidth, PaddleHeight);
           g.fill();
+          g.stroke();
         }}
         x={0}
         y={gameState.paddle_1_y - PaddleHeight / 2}
@@ -106,6 +108,10 @@ function PongStage({ clientID, gameState, onMove }: PongGameProps) {
           g.fill(player === 1 ? PADDLE_COLOR_1 : PADDLE_COLOR_2);
           g.rect(0, 0, PaddleWidth, PaddleHeight);
           g.fill();
+          if (player === 1) {
+            g.setStrokeStyle({color: 0xffffff, width: 2})
+            g.stroke();
+          }
         }}
         x={800 - PaddleWidth}
         y={gameState.paddle_2_y - PaddleHeight / 2}
