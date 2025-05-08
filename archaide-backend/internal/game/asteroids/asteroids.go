@@ -27,14 +27,14 @@ const (
 	PROJECTILE_RADIUS   float64       = 3.0
 
 	// Asteroid Settings
-	INITIAL_ASTEROID_COUNT    int     = 8
+	INITIAL_ASTEROID_COUNT    int     = 16
 	ASTEROID_SPAWN_PADDING    float64 = 100.0 // The minimal distance from the center to spawn
-	ASTEROID_SPEED_MIN        float64 = 30.0
-	ASTEROID_SPEED_MAX        float64 = 80.0
+	ASTEROID_SPEED_MIN        float64 = 50.0
+	ASTEROID_SPEED_MAX        float64 = 110.0
 	ASTEROID_POINTS_LARGE     int     = 20
 	ASTEROID_POINTS_MIDDLE    int     = 50
 	ASTEROID_POINTS_SMALL     int     = 100
-	ASTEROID_SPLIT_COUNT      int     = 2  // Into how many pieces an asteroid breaks after getting hit
+	ASTEROID_SPLIT_COUNT      int     = 3  // Into how many pieces an asteroid breaks after getting hit
 	ASTEROID_SPLIT_ANGLE_VARY float64 = 30 // The degress of variance for the direction of asteroids after splitting
 
 	// Game World Settings
@@ -119,7 +119,7 @@ func NewAsteroidsGame(finisher game.GameFinisher, id string) *AsteroidsGame {
 		stopChan:     make(chan bool),
 		isRunning:    false,
 		minPlayers:   2,
-		maxPlayers:   4,
+		maxPlayers:   8,
 	}
 }
 

@@ -1,7 +1,7 @@
 import { extend } from "@pixi/react";
 import { Container, Graphics, Texture, Sprite } from "pixi.js";
 import * as PIXI from "pixi.js";
-import { COLORS } from "./config";
+import { COLORS, SCREEN } from "./config";
 import { AsteroidsAsteroidState } from "../../types";
 
 extend({ Container, Graphics, Sprite });
@@ -19,10 +19,11 @@ function getAsteroidWidth(a: AsteroidsAsteroidState) {
 
 interface AsteroidProps {
   state: AsteroidsAsteroidState;
+  rotation: number;
 }
 
 export default function Asteroid(props: AsteroidProps) {
-  const { state } = props;
+  const { state, rotation } = props;
 
   const variantIndex =
     state.variantIndex !== undefined ? state.variantIndex : 0;
@@ -37,11 +38,11 @@ export default function Asteroid(props: AsteroidProps) {
         draw={(g) => {
           g.clear();
           g.fill(COLORS.white);
-          g.circle(0, 0, getAsteroidWidth(state));
+          g.circle(0, 0, getAsteroidWidth(state) * SCREEN.scaling_factor);
           g.fill();
         }}
-        x={state.pos.x}
-        y={state.pos.y}
+        x={state.pos.x * SCREEN.scaling_factor}
+        y={state.pos.y * SCREEN.scaling_factor}
       />
     );
   }
@@ -50,9 +51,11 @@ export default function Asteroid(props: AsteroidProps) {
     <pixiSprite
       key={`asteroid-${state.id}`}
       texture={texture}
-      x={state.pos.x}
-      y={state.pos.y}
+      x={state.pos.x * SCREEN.scaling_factor}
+      y={state.pos.y * SCREEN.scaling_factor}
       anchor={0.5}
+      scale={SCREEN.scaling_factor}
+      rotation={rotation}
     />
   );
 }

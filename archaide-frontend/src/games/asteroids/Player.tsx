@@ -1,7 +1,7 @@
 import { extend } from "@pixi/react";
 import { Container, Graphics, Sprite, Texture } from "pixi.js";
 import * as PIXI from "pixi.js";
-import { COLORS } from "./config";
+import { COLORS, SCREEN } from "./config";
 import { AsteroidsPlayerState } from "../../types";
 
 extend({ Container, Graphics, Sprite });
@@ -26,11 +26,11 @@ export default function Player(props: PlayerProps) {
         draw={(g) => {
           g.clear();
           g.fill(COLORS.white);
-          g.circle(0, 0, 15);
+          g.circle(0, 0, 15 * SCREEN.scaling_factor);
           g.fill();
         }}
-        x={state.pos.x - 7.5}
-        y={state.pos.y - 7.5}
+        x={(state.pos.x - 7.5) * SCREEN.scaling_factor}
+        y={(state.pos.y - 7.5) * SCREEN.scaling_factor}
       />
     );
   }
@@ -38,9 +38,10 @@ export default function Player(props: PlayerProps) {
     <pixiSprite
       key={`player-${state.id}`}
       texture={texture}
-      x={state.pos.x}
-      y={state.pos.y}
+      x={state.pos.x * SCREEN.scaling_factor}
+      y={state.pos.y * SCREEN.scaling_factor}
       rotation={rotation}
+      scale={SCREEN.scaling_factor}
       anchor={0.5}
     />
   );

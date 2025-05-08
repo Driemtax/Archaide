@@ -141,8 +141,8 @@ export default function Asteroids() {
     <div>
       <h1>Asteroids</h1>
       <Application
-        width={SCREEN.width}
-        height={SCREEN.height}
+        width={SCREEN.width * SCREEN.scaling_factor}
+        height={SCREEN.height * SCREEN.scaling_factor}
         backgroundColor={COLORS.black}
         antialias={true}
       >

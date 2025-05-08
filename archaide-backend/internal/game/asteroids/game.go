@@ -178,7 +178,7 @@ func (g *AsteroidsGame) update(dt float64) {
 
 	/// --- Spawn new Asteroids ---
 	// If there are not enough asteroids left, spawn more
-	if len(g.asteroids) < INITIAL_ASTEROID_COUNT/2 && len(g.players) > 0 {
+	if len(g.asteroids) < INITIAL_ASTEROID_COUNT && len(g.players) > 0 {
 		// Spawn one new large asteroid at edge
 		edge := rand.IntN(4) // 0: top, 1: bottom, 2: left, 3: right
 		var spawnPos component.Vector2D
