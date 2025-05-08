@@ -2,6 +2,7 @@ import { WebSocketProvider } from "./context/WebSocketContext";
 import LobbyView from "./views/LobbyView";
 import GameView from "./views/GameView";
 import { useWebSocketContext } from "./hooks/useWebSocketContext";
+import { Toaster } from "./components/ui/sonner";
 
 // TODO lets move this into a .env file
 const WS_URL = "ws://localhost:3030/ws";
@@ -29,6 +30,7 @@ export default function App() {
   return (
     <WebSocketProvider url={WS_URL}>
       <AppContent />
+      <Toaster />
     </WebSocketProvider>
   );
 }
