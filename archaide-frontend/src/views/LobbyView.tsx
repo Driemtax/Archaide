@@ -23,7 +23,7 @@ export default function LobbyView() {
 
   return (
     <div>
-      <h1>Archaide Lobby</h1>
+      <h1 className="text-3xl underline font-bold">Archaide Lobby</h1>
 
       <h2>Players in Lobby</h2>
       {Object.keys(players).length > 0 ? (
