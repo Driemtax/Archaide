@@ -23,6 +23,8 @@ export interface ErrorPayload {
 }
 
 export interface PongStatePayload {
+  player_1: string,
+  player_2: string,
   ball_x: number;
   ball_y: number;
   paddle_1_y: number;

@@ -6,6 +6,8 @@ type PongInputPayload struct {
 
 // PongStatePayload defines the data sent to clients each tick.
 type PongStatePayload struct {
+	Player1  string  `json:"player_1"` // Player 1 ID
+	Player2  string  `json:"player_2"` // Player 2 ID
 	BallX    float64 `json:"ball_x"`
 	BallY    float64 `json:"ball_y"`
 	Paddle1Y float64 `json:"paddle_1_y"` // Position of player assigned role 1

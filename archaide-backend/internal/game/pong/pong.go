@@ -479,6 +479,8 @@ func (g *PongGame) sendGameState() {
 
 	// Create the state payload using data from the assigned roles.
 	statePayload := PongStatePayload{
+		Player1:  p1State.PlayerID,
+		Player2:  p2State.PlayerID,
 		BallX:    g.ballX,
 		BallY:    g.ballY,
 		Paddle1Y: p1State.PaddleY,
