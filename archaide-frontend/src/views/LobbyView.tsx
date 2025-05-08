@@ -46,7 +46,7 @@ export default function LobbyView() {
             <li key={clientId}>
               <Avatar>
                 <AvatarImage src={playerInfo.avatarUrl} />
-                <AvatarFallback>CN</AvatarFallback>
+                <AvatarFallback>{playerInfo.name}</AvatarFallback>
               </Avatar>
               <p>{playerInfo.name}</p>
               <strong>

@@ -121,13 +121,17 @@ function WebSocketProvider({ url, children }: WebSocketProviderProps) {
 
             newPlayerIds.forEach((playerId) => {
               if (!previousPlayers[playerId]) {
-                toast.success(`${playerId} entered Archaide! Welcome! 🎉`);
+                toast.success(
+                  `${newPlayers?.[playerId]?.name || playerId} entered Archaide! Welcome! 🎉`,
+                );
               }
             });
 
             previousPlayerIds.forEach((playerId) => {
               if (!newPlayers[playerId]) {
-                toast.info(`${playerId} left the lobby. GoodBye! 👋`);
+                toast.info(
+                  `${previousPlayers?.[playerId]?.name || playerId} left the lobby. GoodBye! 👋`,
+                );
               }
             });
 
@@ -141,28 +145,28 @@ function WebSocketProvider({ url, children }: WebSocketProviderProps) {
 
                   if (scoreDiff > 0) {
                     toast(
-                      `🏆 ${playerId} came back from his game and increased is score by ${scoreDiff} to ${newPlayer.score}! Strong!`,
+                      `🏆 ${newPlayers?.[playerId]?.name} came back from his game and increased his score by ${scoreDiff} to ${newPlayer.score}! Strong!`,
                     );
                   } else if (scoreDiff === 0) {
                     toast(
-                      `${playerId} came back from his game but could not win any points.`,
+                      `${newPlayers?.[playerId]?.name} came back from his game but could not win any points.`,
                     );
                   } else {
                     // This case should not happen
                     toast(
-                      `${playerId} came back from his game the new score is: ${newPlayer.score}.`,
+                      `${newPlayers?.[playerId]?.name} came back from his game the new score is: ${newPlayer.score}.`,
                     );
                   }
                 } else if (!prevPlayer.inGame && newPlayer.inGame) {
                   toast.info(
-                    `🚀 ${playerId} started "${newPlayer.selectedGame || "a game"}"! Good Luck!`,
+                    `🚀 ${newPlayers?.[playerId]?.name} started "${newPlayer.selectedGame || "a game"}"! Good Luck!`,
                   );
                 } else if (
                   newPlayer.selectedGame !== prevPlayer.selectedGame &&
                   !newPlayer.inGame
                 ) {
                   toast.info(
-                    `${playerId} has selected "${newPlayer.selectedGame}".`,
+                    `${newPlayers?.[playerId]?.name} has selected "${newPlayer.selectedGame}".`,
                   );
                 }
               }
