@@ -333,6 +333,8 @@ func (h *Hub) broadcastLobbyUpdate() {
 			Score:        client.Score,
 			InGame:       inGame,
 			SelectedGame: client.SelectedGame,
+			Name:         client.Character.Name,
+			AvatarUrl:    client.Character.ImageUrl,
 		}
 	}
 	h.gameMutex.RUnlock()

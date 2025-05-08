@@ -18,6 +18,7 @@ import type {
   PongStatePayload,
 } from "../types";
 import { useWebSocket } from "../hooks/useWebSocket";
+import { toast } from "sonner";
 
 /**
  * Defines the shape of the data and functions provided by the WebSocket context.
@@ -111,7 +112,68 @@ function WebSocketProvider({ url, children }: WebSocketProviderProps) {
         }
         case "update_lobby": {
           const payload = message.payload as UpdateLobbyPayload;
-          setPlayers(payload.players ?? {});
+
+          setPlayers((previousPlayers) => {
+            const newPlayers = payload.players ?? {};
+
+            const previousPlayerIds = Object.keys(previousPlayers);
+            const newPlayerIds = Object.keys(newPlayers);
+
+            newPlayerIds.forEach((playerId) => {
+              if (!previousPlayers[playerId]) {
+                toast.success(
+                  `${newPlayers?.[playerId]?.name || playerId} entered Archaide! Welcome! 🎉`,
+                );
+              }
+            });
+
+            previousPlayerIds.forEach((playerId) => {
+              if (!newPlayers[playerId]) {
+                toast.info(
+                  `${previousPlayers?.[playerId]?.name || playerId} left the lobby. GoodBye! 👋`,
+                );
+              }
+            });
+
+            newPlayerIds.forEach((playerId) => {
+              const prevPlayer = previousPlayers[playerId];
+              const newPlayer = newPlayers[playerId];
+
+              if (prevPlayer && newPlayer) {
+                if (prevPlayer.inGame && !newPlayer.inGame) {
+                  const scoreDiff = newPlayer.score - prevPlayer.score;
+
+                  if (scoreDiff > 0) {
+                    toast(
+                      `🏆 ${newPlayers?.[playerId]?.name} came back from his game and increased his score by ${scoreDiff} to ${newPlayer.score}! Strong!`,
+                    );
+                  } else if (scoreDiff === 0) {
+                    toast(
+                      `${newPlayers?.[playerId]?.name} came back from his game but could not win any points.`,
+                    );
+                  } else {
+                    // This case should not happen
+                    toast(
+                      `${newPlayers?.[playerId]?.name} came back from his game the new score is: ${newPlayer.score}.`,
+                    );
+                  }
+                } else if (!prevPlayer.inGame && newPlayer.inGame) {
+                  toast.info(
+                    `🚀 ${newPlayers?.[playerId]?.name} started "${newPlayer.selectedGame || "a game"}"! Good Luck!`,
+                  );
+                } else if (
+                  newPlayer.selectedGame !== prevPlayer.selectedGame &&
+                  !newPlayer.inGame
+                ) {
+                  toast.info(
+                    `${newPlayers?.[playerId]?.name} has selected "${newPlayer.selectedGame}".`,
+                  );
+                }
+              }
+            });
+
+            return newPlayers;
+          });
           break;
         }
         case "back_to_lobby":
@@ -135,6 +197,7 @@ function WebSocketProvider({ url, children }: WebSocketProviderProps) {
         case "error": {
           const payload = message.payload as ErrorPayload;
           console.error(`Server Logic Error: ${payload.message}`);
+          toast(`❌ A server logic error has occoured: ${payload.message}`);
           setGameError(payload.message);
           break;
         }

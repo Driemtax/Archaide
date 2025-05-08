@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Driemtax/Archaide/internal/character"
 	"github.com/Driemtax/Archaide/internal/hub"
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
@@ -32,6 +33,7 @@ func serveWs(hubInstance *hub.Hub, w http.ResponseWriter, r *http.Request) {
 		Conn:         conn,
 		Send:         make(chan []byte, 256), // Use a buffered channel
 		Id:           uuid.New().String(),
+		Character:    character.GetCharacter(),
 		Score:        0,
 		SelectedGame: "",
 	}

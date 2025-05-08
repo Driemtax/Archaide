@@ -6,6 +6,14 @@ import { ClientMessage } from "../../types";
 import { useEffect, useState, useRef } from "react"; // Added useEffect, useState, useRef
 import { COLORS, SCREEN } from "./config";
 import AsteroidsStage from "./AsteroidsStage";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 // Exactly the doubled value of the actual asteroid update rate
 const SEND_INTERVAL = 1000 / 60;
@@ -23,10 +31,12 @@ const ASTEROID_ASSET_PATHS = [
   "assets/sprite_small_asteroid1.png",
   "assets/sprite_small_asteroid2.png",
   "assets/sprite_asteroids_player.png",
+  "assets/sprite_asteroids_own_player.png",
 ];
 
 export default function Asteroids() {
-  const { sendMessage } = useWebSocketContext();
+  const { sendMessage, asteroidState, players, myClientId } =
+    useWebSocketContext();
   const [keysPressed, setKeysPressed] = useState({
     left: false,
     right: false,
@@ -139,15 +149,41 @@ export default function Asteroids() {
 
   return (
     <div>
-      <h1>Asteroids</h1>
-      <Application
-        width={SCREEN.width}
-        height={SCREEN.height}
-        backgroundColor={COLORS.black}
-        antialias={true}
-      >
-        <AsteroidsStage />
-      </Application>
+      <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
+        Asteroids
+      </h1>
+      <div className="flex flex-row gap-4">
+        <div className="grid gap-4 grid-cols-1 w-2/6">
+          {Object.entries(asteroidState?.players || {}).map(([, p]) => (
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  <Avatar>
+                    <AvatarImage src={players?.[p.id]?.avatarUrl || ""} />
+                    <AvatarFallback>P</AvatarFallback>
+                  </Avatar>
+                  {players?.[p.id]?.name || ""}{" "}
+                  {myClientId === p.id ? "(You)" : ""}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p>Health: {p.health}/3</p>
+                <p>Score: {p.score}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="border shadow-sm rounded-xl p-1">
+          <Application
+            width={SCREEN.width * SCREEN.scaling_factor}
+            height={SCREEN.height * SCREEN.scaling_factor}
+            backgroundColor={COLORS.black}
+            antialias={true}
+          >
+            <AsteroidsStage />
+          </Application>
+        </div>
+      </div>
     </div>
   );
 }

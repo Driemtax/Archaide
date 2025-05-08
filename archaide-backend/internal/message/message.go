@@ -29,8 +29,6 @@ const (
 	AsteroidsGameOver MessageType = "asteroids_game_over" // From server: game over
 )
 
-// Payload Structures (Examples)
-
 // WelcomeMessage contains the ID of the new client and the list of available games
 type WelcomeMessage struct {
 	ClientID     string   `json:"clientId"`
@@ -41,6 +39,8 @@ type PlayerInfo struct {
 	Score        int    `json:"score"`
 	InGame       bool   `json:"inGame"`
 	SelectedGame string `json:"selectedGame"`
+	Name         string `json:"name"`
+	AvatarUrl    string `json:"avatarUrl"`
 }
 
 // LobbyUpdateMessage contains the current state of the lobby (players and their scores)
