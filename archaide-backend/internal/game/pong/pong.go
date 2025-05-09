@@ -16,30 +16,33 @@ import (
 const (
 	// Game dimensions and elements sizes.
 	// Assuming y=0 is at the bottom for these calculations. Client might need inversion.
-	GameWidth    = 800.0
-	GameHeight   = 600.0
-	PaddleWidth  = 10.0
-	PaddleHeight = 60.0
-	BallSize     = 10.0
+	GAME_WIDTH    = 800.0
+	GAME_HEIGHT   = 600.0
+	PADDLE_WIDTH  = 10.0
+	PADDLE_HEIGHT = 60.0
+	BALL_SIZE     = 10.0
 
 	// Game rules and physics.
-	PaddleSpeed   = 10.0 // Pixels per update tick for paddle movement
-	InitialBallVX = 5.0  // Initial horizontal ball speed
-	InitialBallVY = 4.0  // Initial vertical ball speed
-	MaxBallSpeedX = 15.0 // Prevent ball from becoming too fast horizontally
-	MaxBallSpeedY = 12.0 // Prevent ball from becoming too fast vertically
-	SpeedIncrease = 1.05 // Factor to increase ball speed on paddle hit
-	TargetScore   = 5    // Score needed to win the game
-	MinPlayers    = 2    // Required number of players
-	MaxPlayers    = 2    // Maximum number of players
+	PADDLE_SPEED     = 900.0 // Pixels per second
+	INITIAL_BALL_VX  = 225.0 // Initial horizontal ball speed per second
+	INITIAL_BALL_VY  = 180.0 // Initial vertical ball speed per second
+	MAX_BALL_SPEED_X = 675.0 // Prevent ball from becoming too fast horizontally
+	MAX_BALL_SPEED_Y = 540.0 // Prevent ball from becoming too fast vertically
+	SPEED_INCREASE   = 1.05  // Factor to increase ball speed on paddle hit
+	TARGET_SCORE     = 5     // Score needed to win the game
+	MIN_PLAYERS      = 2     // Required number of players
+	MAX_PLAYERS      = 2     // Maximum number of players
+
+	TICK_RATE = 32 * time.Millisecond // ~30 FPS
 )
 
 // PongPlayerState holds the game-specific state for a player in Pong.
 type PongPlayerState struct {
-	PlayerID string  // ID linking back to the game.Player
-	PaddleY  float64 // Vertical position of the center of the paddle
-	Score    int
-	Role     int // 1 for Player 1 (left), 2 for Player 2 (right)
+	PlayerID          string  // ID linking back to the game.Player
+	PaddleY           float64 // Vertical position of the center of the paddle
+	MovementDirection int     // Direction of paddle movement (up/down)
+	Score             int
+	Role              int // 1 for Player 1 (left), 2 for Player 2 (right)
 }
 
 // PongGame implements the game.Game interface for a 2-player Pong match.
@@ -55,9 +58,10 @@ type PongGame struct {
 	ballX, ballY   float64 // Position of the center of the ball
 	ballVX, ballVY float64 // Ball velocity
 
-	ticker    *time.Ticker
-	stopChan  chan bool // Channel to signal the game loop to stop
-	isRunning bool      // Indicates if the game loop is active
+	ticker       *time.Ticker
+	stopChan     chan bool // Channel to signal the game loop to stop
+	isRunning    bool      // Indicates if the game loop is active
+	lastTickTime time.Time // For delta time
 }
 
 // NewPongGame creates a new instance of the Pong game.
@@ -85,8 +89,8 @@ func (g *PongGame) AddPlayer(player game.Player) error {
 	g.playerMux.Lock()
 	defer g.playerMux.Unlock()
 
-	if len(g.players) >= MaxPlayers {
-		return fmt.Errorf("game %s is full (%d/%d players)", g.gameID, len(g.players), MaxPlayers)
+	if len(g.players) >= MAX_PLAYERS {
+		return fmt.Errorf("game %s is full (%d/%d players)", g.gameID, len(g.players), MAX_PLAYERS)
 	}
 
 	playerID := player.GetID()
@@ -105,7 +109,7 @@ func (g *PongGame) AddPlayer(player game.Player) error {
 	// Create the internal player state
 	newPlayerState := &PongPlayerState{
 		PlayerID: playerID,
-		PaddleY:  (GameHeight / 2) - (PaddleHeight / 2),
+		PaddleY:  (GAME_HEIGHT / 2) - (PADDLE_HEIGHT / 2),
 		Score:    0,
 		Role:     role,
 	}
@@ -139,8 +143,8 @@ func (g *PongGame) RemovePlayer(player game.Player) {
 	log.Printf("[Game %s] Player %s (Player %d) removed.", g.gameID, playerID, role)
 
 	// If the game was running and now has too few players, stop it.
-	if g.isRunning && playerCount < MinPlayers {
-		log.Printf("[Game %s] Not enough players remaining (%d/%d). Stopping game.", g.gameID, playerCount, MinPlayers)
+	if g.isRunning && playerCount < MIN_PLAYERS {
+		log.Printf("[Game %s] Not enough players remaining (%d/%d). Stopping game.", g.gameID, playerCount, MIN_PLAYERS)
 		// Stop the game asynchronously to avoid deadlocks if called from within game loop context.
 		go g.Stop()
 	}
@@ -149,9 +153,9 @@ func (g *PongGame) RemovePlayer(player game.Player) {
 // Start begins the game loop if the correct number of players are present.
 func (g *PongGame) Start() {
 	g.playerMux.Lock()
-	if len(g.players) != MinPlayers {
+	if len(g.players) != MIN_PLAYERS {
 		g.playerMux.Unlock()
-		log.Printf("[Game %s] Cannot start, requires %d players, but has %d.", g.gameID, MinPlayers, len(g.players))
+		log.Printf("[Game %s] Cannot start, requires %d players, but has %d.", g.gameID, MIN_PLAYERS, len(g.players))
 		// Ensure game is stopped and hub is notified even if start fails pre-loop
 		g.Stop() // Stop will handle the !isRunning case gracefully
 		return
@@ -165,8 +169,9 @@ func (g *PongGame) Start() {
 	}
 
 	g.isRunning = true
-	g.Reset()                                        // Set initial ball and paddle positions/velocities
-	g.ticker = time.NewTicker(60 * time.Millisecond) // ~60 FPS
+	g.lastTickTime = time.Now()
+	g.Reset() // Set initial ball and paddle positions/velocities
+	g.ticker = time.NewTicker(TICK_RATE)
 	g.playerMux.Unlock()
 
 	log.Printf("[Game %s] Starting game loop.", g.gameID)
@@ -189,8 +194,13 @@ func (g *PongGame) Start() {
 				return
 			}
 
+			// Calculate Delta Time
+			now := time.Now()
+			dt := now.Sub(g.lastTickTime).Seconds()
+			g.lastTickTime = now
+
 			g.playerMux.Lock() // Lock for update/send/checkOver
-			g.update()         // Update game state (ball, collisions)
+			g.update(dt)       // Update game state (ball, collisions)
 			g.sendGameState()  // Send current state to players
 
 			gameOver, winnerID, score1, score2 := g.checkGameOver() // Check win condition
@@ -289,17 +299,11 @@ func (g *PongGame) HandleMessage(player game.Player, msg message.Message) {
 		g.playerMux.Lock()
 		pState, ok := g.players[playerID]
 		if ok {
-			// Update paddle position based on input direction
-			newY := pState.PaddleY
 			if payload.Direction == "up" {
-				newY += PaddleSpeed
+				pState.MovementDirection = -1
 			} else if payload.Direction == "down" {
-				newY -= PaddleSpeed
+				pState.MovementDirection = 1
 			}
-			// Clamp paddle position within game boundaries (using center Y)
-			halfPaddle := PaddleHeight / 2
-			pState.PaddleY = math.Max(halfPaddle, math.Min(GameHeight-halfPaddle, newY))
-			// log.Printf("[Game %s] Player %s paddle moved to %.2f", g.gameID, playerID, pState.PaddleY)
 		} else {
 			log.Printf("[Game %s] Received input from player %s who is not in the internal state map.", g.gameID, playerID)
 		}
@@ -314,23 +318,36 @@ func (g *PongGame) HandleMessage(player game.Player, msg message.Message) {
 
 // update advances the game state by one tick, handling ball movement and collisions.
 // This method requires the playerMux to be locked by the caller.
-func (g *PongGame) update() {
+func (g *PongGame) update(dt float64) {
 	// 1. Move the ball
-	g.ballX += g.ballVX
-	g.ballY += g.ballVY
+	g.ballX += g.ballVX * dt
+	g.ballY += g.ballVY * dt
 
-	halfBall := BallSize / 2
+	halfBall := BALL_SIZE / 2
 
 	// 2. Check for collisions with top/bottom walls
 	if g.ballY-halfBall <= 0 { // Hit bottom wall
 		g.ballY = halfBall // Clamp position
 		g.ballVY = -g.ballVY
-	} else if g.ballY+halfBall >= GameHeight { // Hit top wall
-		g.ballY = GameHeight - halfBall // Clamp position
+	} else if g.ballY+halfBall >= GAME_HEIGHT { // Hit top wall
+		g.ballY = GAME_HEIGHT - halfBall // Clamp position
 		g.ballVY = -g.ballVY
 	}
 
-	// 3. Check for collisions with paddles
+	// 3. Move paddles
+	for _, pState := range g.players {
+		newY := pState.PaddleY +
+			float64(pState.MovementDirection)*PADDLE_SPEED*dt
+		// Clamp paddle position within game boundaries (using center Y)
+		halfPaddle := PADDLE_HEIGHT / 2
+		pState.PaddleY = math.Max(halfPaddle, math.Min(GAME_HEIGHT-halfPaddle, newY))
+		// log.Printf("[Game %s] Player %s paddle moved to %.2f", g.gameID, playerID, pState.PaddleY)
+
+		// Reset movement direction after processing
+		pState.MovementDirection = 0
+	}
+
+	// 4. Check for collisions with paddles
 	var player1State, player2State *PongPlayerState
 	for _, pState := range g.players {
 		if pState.Role == 1 {
@@ -346,10 +363,10 @@ func (g *PongGame) update() {
 		return // Cannot proceed without both players
 	}
 
-	halfPaddleH := PaddleHeight / 2
+	halfPaddleH := PADDLE_HEIGHT / 2
 
 	// Collision with Player 1's paddle (left)
-	paddle1LeftEdge := PaddleWidth
+	paddle1LeftEdge := PADDLE_WIDTH
 	if g.ballVX < 0 && g.ballX-halfBall <= paddle1LeftEdge { // Ball is moving left and near/past the paddle's front edge
 		paddle1Top := player1State.PaddleY + halfPaddleH
 		paddle1Bottom := player1State.PaddleY - halfPaddleH
@@ -366,7 +383,7 @@ func (g *PongGame) update() {
 	}
 
 	// Collision with Player 2's paddle (right)
-	paddle2RightEdge := GameWidth - PaddleWidth
+	paddle2RightEdge := GAME_WIDTH - PADDLE_WIDTH
 	if g.ballVX > 0 && g.ballX+halfBall >= paddle2RightEdge { // Ball is moving right and near/past the paddle's front edge
 		paddle2Top := player2State.PaddleY + halfPaddleH
 		paddle2Bottom := player2State.PaddleY - halfPaddleH
@@ -382,12 +399,12 @@ func (g *PongGame) update() {
 		}
 	}
 
-	// 4. Check for scoring (ball hitting left/right walls)
+	// 5. Check for scoring (ball hitting left/right walls)
 	if g.ballX-halfBall <= 0 { // Ball hit left wall
 		player2State.Score++ // Player 2 scores
 		log.Printf("[Game %s] Player 2 scored! Score: %d-%d", g.gameID, player1State.Score, player2State.Score)
 		g.Reset() // Reset ball and paddles for the next round
-	} else if g.ballX+halfBall >= GameWidth { // Ball hit right wall
+	} else if g.ballX+halfBall >= GAME_WIDTH { // Ball hit right wall
 		player1State.Score++ // Player 1 scores
 		log.Printf("[Game %s] Player 1 scored! Score: %d-%d", g.gameID, player1State.Score, player2State.Score)
 		g.Reset() // Reset ball and paddles for the next round
@@ -397,15 +414,15 @@ func (g *PongGame) update() {
 // increaseBallSpeed slightly increases the ball's speed, capping at max values.
 // This method requires the playerMux to be locked by the caller.
 func (g *PongGame) increaseBallSpeed() {
-	newVX := g.ballVX * SpeedIncrease
-	newVY := g.ballVY * SpeedIncrease
+	newVX := g.ballVX * SPEED_INCREASE
+	newVY := g.ballVY * SPEED_INCREASE
 
 	// Apply caps, preserving sign
-	if math.Abs(newVX) > MaxBallSpeedX {
-		newVX = math.Copysign(MaxBallSpeedX, newVX)
+	if math.Abs(newVX) > MAX_BALL_SPEED_X {
+		newVX = math.Copysign(MAX_BALL_SPEED_X, newVX)
 	}
-	if math.Abs(newVY) > MaxBallSpeedY {
-		newVY = math.Copysign(MaxBallSpeedY, newVY)
+	if math.Abs(newVY) > MAX_BALL_SPEED_Y {
+		newVY = math.Copysign(MAX_BALL_SPEED_Y, newVY)
 	}
 
 	g.ballVX = newVX
@@ -433,10 +450,10 @@ func (g *PongGame) checkGameOver() (gameOver bool, winnerID string, score1 int, 
 	score1 = p1State.Score
 	score2 = p2State.Score
 
-	if score1 >= TargetScore {
+	if score1 >= TARGET_SCORE {
 		return true, p1State.PlayerID, score1, score2
 	}
-	if score2 >= TargetScore {
+	if score2 >= TARGET_SCORE {
 		return true, p2State.PlayerID, score1, score2
 	}
 
@@ -462,6 +479,8 @@ func (g *PongGame) sendGameState() {
 
 	// Create the state payload using data from the assigned roles.
 	statePayload := PongStatePayload{
+		Player1:  p1State.PlayerID,
+		Player2:  p2State.PlayerID,
 		BallX:    g.ballX,
 		BallY:    g.ballY,
 		Paddle1Y: p1State.PaddleY,
@@ -510,16 +529,16 @@ func (g *PongGame) sendGameOver(winnerID string, score1, score2 int) {
 // This method requires the playerMux to be locked by the caller.
 func (g *PongGame) Reset() {
 	// Center the ball
-	g.ballX = GameWidth / 2
-	g.ballY = GameHeight / 2
+	g.ballX = GAME_WIDTH / 2
+	g.ballY = GAME_HEIGHT / 2
 
 	// Assign random initial horizontal direction
-	vx := InitialBallVX
+	vx := INITIAL_BALL_VX
 	if rand.Intn(2) == 0 {
 		vx = -vx
 	}
 	// Assign random initial vertical direction
-	vy := InitialBallVY
+	vy := INITIAL_BALL_VY
 	if rand.Intn(2) == 0 {
 		vy = -vy
 	}
@@ -528,7 +547,7 @@ func (g *PongGame) Reset() {
 
 	// Reset paddle positions
 	for _, pState := range g.players {
-		pState.PaddleY = GameHeight / 2
+		pState.PaddleY = GAME_HEIGHT / 2
 	}
 	log.Printf("[Game %s] Round reset. Ball velocity: (%.2f, %.2f)", g.gameID, g.ballVX, g.ballVY)
 }
