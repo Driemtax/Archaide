@@ -59,6 +59,38 @@ function GameHUD({ player1Score, player2Score }: HudProps) {
         <span>Spieler 1: {player1Score}</span>
         <span>Spieler 2: {player2Score}</span>
       </div>
+      {/* Legende für Spielerfarben */}
+      <div
+        style={{
+          display: "flex",
+          gap: 32,
+          marginBottom: 16,
+          alignItems: "center",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div
+            style={{
+              width: 24,
+              height: 24,
+              background: toHexColor(PADDLE_COLOR_1),
+              border: "2px solid #fff",
+              borderRadius: 4,
+            }}
+          />
+          <span>You</span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div
+            style={{
+              width: 24,
+              height: 24,
+              background: toHexColor(PADDLE_COLOR_2),
+            }}
+          />
+          <span>Enemy</span>
+        </div>
+      </div>
       {/* {countdown > 0 && (
         <div style={{ fontSize: 48, marginBottom: 8 }}>
           Spiel startet in {countdown}...
@@ -92,7 +124,7 @@ function PongStage({ clientID, gameState, onMove }: PongGameProps) {
       <pixiGraphics
         draw={(g: Graphics) => {
           g.clear();
-          g.fill(player === 1 ? PADDLE_COLOR_2 : PADDLE_COLOR_1);
+          g.fill(player === 1 ? PADDLE_COLOR_1 : PADDLE_COLOR_2);
           g.setStrokeStyle({color: 0xffffff, width: 2})
           g.rect(0, 0, PaddleWidth, PaddleHeight);
           g.fill();
@@ -105,10 +137,10 @@ function PongStage({ clientID, gameState, onMove }: PongGameProps) {
       {/* Paddle 2 */}
       <pixiGraphics
         draw={(g: Graphics) => {
-          g.fill(player === 1 ? PADDLE_COLOR_1 : PADDLE_COLOR_2);
+          g.fill(player === 2 ? PADDLE_COLOR_1 : PADDLE_COLOR_2);
           g.rect(0, 0, PaddleWidth, PaddleHeight);
           g.fill();
-          if (player === 1) {
+          if (player === 2) {
             g.setStrokeStyle({color: 0xffffff, width: 2})
             g.stroke();
           }
@@ -130,6 +162,10 @@ function PongStage({ clientID, gameState, onMove }: PongGameProps) {
   );
 
   return pixiContainer;
+}
+
+function toHexColor(num: number){
+  return "#" + num.toString(16).padStart(6, "0");
 }
 
 export default function PongGame() {
