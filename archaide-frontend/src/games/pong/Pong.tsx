@@ -17,6 +17,9 @@ interface PongGameProps {
 interface HudProps {
   player1Score: number;
   player2Score: number;
+  player1Name: string;
+  player2Name: string;
+  playerRole: number;
 }
 
 const PaddleWidth = 20;
@@ -32,7 +35,7 @@ const BALL_COLOR = 0xd4ffd4;
 
 extend({ Container, Graphics });
 
-function GameHUD({ player1Score, player2Score }: HudProps) {
+function GameHUD({ player1Score, player2Score, player1Name, player2Name, playerRole }: HudProps) {
   return (
     <div
       style={{
@@ -56,8 +59,8 @@ function GameHUD({ player1Score, player2Score }: HudProps) {
           marginBottom: 12,
         }}
       >
-        <span>Spieler 1: {player1Score}</span>
-        <span>Spieler 2: {player2Score}</span>
+        <span>{playerRole === 1 ? player1Name + " (you)" : player1Name} : {player1Score}</span>
+        <span>{playerRole === 2 ? player2Name + " (you)" : player2Name} : {player2Score}</span>
       </div>
       {/* Legende für Spielerfarben */}
       <div
@@ -78,7 +81,7 @@ function GameHUD({ player1Score, player2Score }: HudProps) {
               borderRadius: 4,
             }}
           />
-          <span>You</span>
+          <span>{player1Name} (you)</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div
@@ -88,7 +91,7 @@ function GameHUD({ player1Score, player2Score }: HudProps) {
               background: toHexColor(PADDLE_COLOR_2),
             }}
           />
-          <span>Enemy</span>
+          <span>{player2Name}</span>
         </div>
       </div>
       {/* {countdown > 0 && (
@@ -169,7 +172,7 @@ function toHexColor(num: number){
 }
 
 export default function PongGame() {
-  const { myClientId, pongState, sendMessage } = useWebSocketContext();
+  const { myClientId, players, pongState, sendMessage } = useWebSocketContext();
   //const [countdown, setCountdown] = useState(COUNTDOWN_START);
 
   // useEffect(() => {
@@ -194,6 +197,13 @@ export default function PongGame() {
     sendMessage(msg);
   };
 
+  // Set player names
+  let player1Name = myClientId != "" ? players[myClientId].name : "Player 1";
+  const playerIds = Object.keys(players); 
+  const enemyId = playerIds.find(id => id !== myClientId);
+  let player2Name = enemyId && enemyId != "" ? players[enemyId].name : "Player 2";
+  const playerRole = pongState?.player_1 === myClientId ? 1 : 2;
+
   if (!pongState) {
     // Waiting for the first game state ensuring
     // that a game state is always present
@@ -205,6 +215,9 @@ export default function PongGame() {
       <GameHUD
         player1Score={pongState?.score_1 || 0}
         player2Score={pongState?.score_2 || 0}
+        player1Name={player1Name}
+        player2Name={player2Name}
+        playerRole={playerRole}
       />
       <div style={{ border: "1px solid white" }}>
         <Application
