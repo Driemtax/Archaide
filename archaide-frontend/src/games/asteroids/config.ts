@@ -6,7 +6,7 @@ const COLORS = {
 const SCREEN = {
   width: 800,
   height: 600,
-  scaling_factor: 1.5,
+  scaling_factor: 1,
 };
 
 export { COLORS, SCREEN };

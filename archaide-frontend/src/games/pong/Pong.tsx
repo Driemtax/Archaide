@@ -46,18 +46,23 @@ function GameHUD({ player1Score, player2Score }: HudProps) {
         userSelect: "none",
       }}
     >
-      <h1 style={{ margin: "16px 0 8px 0", fontSize: 32 }}>PONG 2025</h1>
+      <h1
+        className="font-arcade"
+        style={{ margin: "16px 0 8px 0", fontSize: 32 }}
+      >
+        PONG 2025
+      </h1>
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
-          width: "60%",
+          width: "100%",
           fontSize: 28,
           marginBottom: 12,
         }}
       >
-        <span>Spieler 1: {player1Score}</span>
-        <span>Spieler 2: {player2Score}</span>
+        <span className="font-arcade">Spieler 1: {player1Score}</span>
+        <span className="font-arcade">Spieler 2: {player2Score}</span>
       </div>
       {/* {countdown > 0 && (
         <div style={{ fontSize: 48, marginBottom: 8 }}>
@@ -69,11 +74,11 @@ function GameHUD({ player1Score, player2Score }: HudProps) {
 }
 
 function PongStage({ clientID, gameState, onMove }: PongGameProps) {
-  let player = 0
+  let player = 0;
   if (gameState.player_1 === clientID) {
-    player = 1
+    player = 1;
   } else if (gameState.player_2 === clientID) {
-    player = 2
+    player = 2;
   }
 
   useEffect(() => {
@@ -93,7 +98,7 @@ function PongStage({ clientID, gameState, onMove }: PongGameProps) {
         draw={(g: Graphics) => {
           g.clear();
           g.fill(player === 1 ? PADDLE_COLOR_2 : PADDLE_COLOR_1);
-          g.setStrokeStyle({color: 0xffffff, width: 2})
+          g.setStrokeStyle({ color: 0xffffff, width: 2 });
           g.rect(0, 0, PaddleWidth, PaddleHeight);
           g.fill();
           g.stroke();
@@ -109,7 +114,7 @@ function PongStage({ clientID, gameState, onMove }: PongGameProps) {
           g.rect(0, 0, PaddleWidth, PaddleHeight);
           g.fill();
           if (player === 1) {
-            g.setStrokeStyle({color: 0xffffff, width: 2})
+            g.setStrokeStyle({ color: 0xffffff, width: 2 });
             g.stroke();
           }
         }}

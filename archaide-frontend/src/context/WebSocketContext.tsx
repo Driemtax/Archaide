@@ -16,6 +16,7 @@ import type {
   PlayerInfo,
   AsteroidsStatePayload,
   PongStatePayload,
+  GameInfo,
 } from "../types";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { toast } from "sonner";
@@ -33,7 +34,7 @@ interface WebSocketContextState {
   /** Map of connected player IDs to their info. */
   players: Record<string, PlayerInfo>;
   /** List of games currently available to join or spectate. */
-  availableGames: string[];
+  availableGames: GameInfo[];
   /** The game the client is currently participating in or spectating. */
   selectedGame: string | null;
   /** Specific error message received from the server's application logic. */
@@ -67,7 +68,7 @@ function WebSocketProvider({ url, children }: WebSocketProviderProps) {
   // --- State managed by the context based on WebSocket messages ---
   const [myClientId, setMyClientId] = useState<string>("");
   const [players, setPlayers] = useState<Record<string, PlayerInfo>>({});
-  const [availableGames, setAvailableGames] = useState<string[]>([]);
+  const [availableGames, setAvailableGames] = useState<GameInfo[]>([]);
   const [selectedGame, setSelectedGame] = useState<string | null>(null);
   const [gameError, setGameError] = useState<string | null>(null); // Server logic errors
   const [asteroidState, setAsteroidState] =
