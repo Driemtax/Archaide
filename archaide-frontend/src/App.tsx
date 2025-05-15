@@ -4,8 +4,8 @@ import GameView from "./views/GameView";
 import { useWebSocketContext } from "./hooks/useWebSocketContext";
 import { Toaster } from "./components/ui/sonner";
 
-// TODO lets move this into a .env file
-const WS_URL = "ws://localhost:3030/ws";
+const IP = process.env.REACT_APP_IP ? process.env.REACT_APP_IP : "localhost";
+const WS_URL = "ws://" + IP + ":3030/ws";
 
 function AppContent() {
   const { selectedGame, readyState, gameError } = useWebSocketContext();
