@@ -29,10 +29,15 @@ const (
 	AsteroidsGameOver MessageType = "asteroids_game_over" // From server: game over
 )
 
+type GameInfo struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
 // WelcomeMessage contains the ID of the new client and the list of available games
 type WelcomeMessage struct {
-	ClientID     string   `json:"clientId"`
-	CurrentGames []string `json:"currentGames"`
+	ClientID     string     `json:"clientId"`
+	CurrentGames []GameInfo `json:"currentGames"`
 }
 
 type PlayerInfo struct {

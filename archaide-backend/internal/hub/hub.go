@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"math/rand"
-	"slices"
 	"sync"
 	"time"
 
@@ -20,12 +19,17 @@ type hubMessage struct {
 	message message.Message
 }
 
+type GameDefinition struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
 type Hub struct {
 	clients               map[*Client]bool
 	incoming              chan hubMessage
 	Register              chan *Client
 	unregister            chan *Client
-	availableGames        []string
+	availableGames        []message.GameInfo
 	currentGameSelections map[*Client]string
 	activeGames           map[string]game.Game
 	clientToGame          map[*Client]string // Key: Client, Value: Game-ID
@@ -36,11 +40,14 @@ type Hub struct {
 
 func NewHub() *Hub {
 	return &Hub{
-		incoming:              make(chan hubMessage, 256),
-		Register:              make(chan *Client),
-		unregister:            make(chan *Client),
-		clients:               make(map[*Client]bool),
-		availableGames:        []string{"Asteroids", "Pong"},
+		incoming:   make(chan hubMessage, 256),
+		Register:   make(chan *Client),
+		unregister: make(chan *Client),
+		clients:    make(map[*Client]bool),
+		availableGames: []message.GameInfo{
+			{Name: "Asteroids", Description: "Avoid asteroids or shoot them!"},
+			{Name: "Pong", Description: "Do not let the ball hit your wall!"},
+		},
 		currentGameSelections: make(map[*Client]string),
 		activeGames:           make(map[string]game.Game),
 		clientToGame:          make(map[*Client]string),
@@ -124,7 +131,12 @@ func (h *Hub) handleLobbyMessage(client *Client, msg message.Message) {
 			return
 		}
 
-		isValidGame := slices.Contains(h.availableGames, payload.Game)
+		isValidGame := false
+		for _, gameInfo := range h.availableGames {
+			if gameInfo.Name == payload.Game {
+				isValidGame = true
+			}
+		}
 		if !isValidGame {
 			log.Printf("Client %s selected invalid game: %s", client.Id, payload.Game)
 			client.SendMessage(message.Error, message.ErrorMessage{Message: "Invalid game selected"})

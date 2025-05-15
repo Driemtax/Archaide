@@ -6,14 +6,8 @@ import { ClientMessage } from "../../types";
 import { useEffect, useState, useRef } from "react"; // Added useEffect, useState, useRef
 import { COLORS, SCREEN } from "./config";
 import AsteroidsStage from "./AsteroidsStage";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import UserDisplay from "@/components/UserDisplay";
+import { Badge } from "@/components/ui/badge";
 
 // Exactly the doubled value of the actual asteroid update rate
 const SEND_INTERVAL = 1000 / 60;
@@ -148,29 +142,29 @@ export default function Asteroids() {
   }
 
   return (
-    <div>
-      <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl">
+    <div className="px-4 py-2 lg:px-8 lg:py-4">
+      <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl font-arcade pb-4">
         Asteroids
       </h1>
-      <div className="flex flex-row gap-4">
-        <div className="grid gap-4 grid-cols-1 w-2/6">
+      <div className="flex flex-col-reverse xl:flex-row gap-4">
+        <div className="hidden 2xl:grid gap-4 grid-cols-1 w-1/3">
           {Object.entries(asteroidState?.players || {}).map(([, p]) => (
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  <Avatar>
-                    <AvatarImage src={players?.[p.id]?.avatarUrl || ""} />
-                    <AvatarFallback>P</AvatarFallback>
-                  </Avatar>
-                  {players?.[p.id]?.name || ""}{" "}
-                  {myClientId === p.id ? "(You)" : ""}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p>Health: {p.health}/3</p>
-                <p>Score: {p.score}</p>
-              </CardContent>
-            </Card>
+            <UserDisplay
+              player={players?.[p.id]}
+              isYousrself={myClientId === p.id}
+              score={p.score}
+            >
+              {p.isInvincible && (
+                <Badge className="font-arcade" variant="outline">
+                  Has respawn protection
+                </Badge>
+              )}
+              <div className="flex flex-row gap-2">
+                {[...Array(p.health)].map(() => (
+                  <img src="/assets/sprite_asteroids_player.png" />
+                ))}
+              </div>
+            </UserDisplay>
           ))}
         </div>
         <div className="border shadow-sm rounded-xl p-1">
