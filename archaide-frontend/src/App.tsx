@@ -4,8 +4,9 @@ import GameView from "./views/GameView";
 import { useWebSocketContext } from "./hooks/useWebSocketContext";
 import { Toaster } from "./components/ui/sonner";
 
-const IP = process.env.REACT_APP_IP ? process.env.REACT_APP_IP : "localhost";
+const IP = import.meta.env.VITE_IP ? import.meta.env.VITE_IP : "localhost";
 const WS_URL = "ws://" + IP + ":3030/ws";
+console.log("Connecting to WebSocket server at:", WS_URL);
 
 function AppContent() {
   const { selectedGame, readyState, gameError } = useWebSocketContext();
