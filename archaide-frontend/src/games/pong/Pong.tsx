@@ -49,12 +49,17 @@ function GameHUD({ player1Score, player2Score, player1Name, player2Name, playerR
         userSelect: "none",
       }}
     >
-      <h1 style={{ margin: "16px 0 8px 0", fontSize: 32 }}>PONG 2025</h1>
+      <h1
+        className="font-arcade"
+        style={{ margin: "16px 0 8px 0", fontSize: 32 }}
+      >
+        PONG 2025
+      </h1>
       <div
         style={{
           display: "flex",
           justifyContent: "space-between",
-          width: "60%",
+          width: "100%",
           fontSize: 28,
           marginBottom: 12,
         }}
@@ -104,11 +109,11 @@ function GameHUD({ player1Score, player2Score, player1Name, player2Name, playerR
 }
 
 function PongStage({ clientID, gameState, onMove }: PongGameProps) {
-  let player = 0
+  let player = 0;
   if (gameState.player_1 === clientID) {
-    player = 1
+    player = 1;
   } else if (gameState.player_2 === clientID) {
-    player = 2
+    player = 2;
   }
 
   useEffect(() => {
