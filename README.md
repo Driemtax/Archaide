@@ -3,6 +3,18 @@
 Ready for a showdown? Archaide is your go-to multiplayer arcade platform built for epic battles with your friends! ⚔️ Challenge your pals and relive the classic arcade fun. 🕹️
 
 This project was built with a focus on creating a robust, real-time, and concurrent backend system from the ground up to power a seamless multiplayer experience.
+
+Here you can see some inmages from Archaide, playing Pong and Asteroids with your friends!
+
+Lobby:
+![[images/Screenshot from 2025-06-22 12-56-05.png]]
+
+Asteroids:
+![[images/Screenshot from 2025-06-22 12-56-23.png]]
+
+Pong: 
+![[images/Screenshot from 2025-06-22 12-57-05.png]]
+
 ## ✨ Features & Technical Highlights
 
 This project is more than just a game; it's an exploration of modern backend and frontend technologies for real-time applications. Here are some of the key architectural and technical features we're proud of:
