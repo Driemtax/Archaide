@@ -7,13 +7,13 @@ This project was built with a focus on creating a robust, real-time, and concurr
 Here you can see some inmages from Archaide, playing Pong and Asteroids with your friends!
 
 Lobby:
-![[images/Screenshot from 2025-06-22 12-56-05.png]]
+![Screenshot of the Archaide Lobby view](images/Screenshot from 2025-06-22 12-56-05.png)
 
 Asteroids:
-![[images/Screenshot from 2025-06-22 12-56-23.png]]
+![Screenshot of the Asteroids game](images/Screenshot from 2025-06-22 12-56-23.png)
 
 Pong: 
-![[images/Screenshot from 2025-06-22 12-57-05.png]]
+![Screenshot of the pong game](images/Screenshot from 2025-06-22 12-57-05.png)
 
 ## ✨ Features & Technical Highlights
 
