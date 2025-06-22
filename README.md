@@ -10,7 +10,7 @@ Lobby:
 ![Screenshot of the Archaide Lobby view](https://github.com/Driemtax/Archaide/blob/main/images/Screenshot%20from%202025-06-22%2012-56-05.png)
 
 Asteroids:
-![Screenshot of the Asteroids game](https://github.com/Driemtax/Archaide/blob/main/images/Screenshot%20from%202025-06-22%2012-56-23.png))
+![Screenshot of the Asteroids game](https://github.com/Driemtax/Archaide/blob/main/images/Screenshot%20from%202025-06-22%2012-56-23.png)
 
 Pong: 
 ![Screenshot of the pong game](https://github.com/Driemtax/Archaide/blob/main/images/Screenshot%20from%202025-06-22%2012-57-05.png)
